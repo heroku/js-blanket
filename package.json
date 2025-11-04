@@ -1,0 +1,77 @@
+{
+  "name": "@heroku/node-sentry-blanket",
+  "version": "0.0.0",
+  "description": "Framework-agnostic sensitive data scrubbing for error monitoring services like Sentry and Rollbar",
+  "type": "module",
+  "packageManager": "pnpm@10.20.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/esm/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.cjs.json && mkdir -p dist/cjs && echo '{\"type\": \"commonjs\"}' > dist/cjs/package.json",
+    "build:esm": "rm -rf dist/esm && tsc -p tsconfig.esm.json",
+    "build": "pnpm run build:cjs && pnpm run build:esm",
+    "test": "MCP_OAUTH_LOG_LEVEL=silent LOG_LEVEL=silent c8 mocha --require ./scripts/test-setup.mjs --forbid-only \"dist/cjs/**/*.test.js\"",
+    "prepare": "husky",
+    "lint": "eslint \"src/**/*.{js,ts}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix",
+    "prettier": "prettier . --write --config ./.prettier.mjs",
+    "format": "pnpm run prettier && pnpm run lint:fix",
+    "pretest": "pnpm run build:cjs && pnpm run build:esm && pnpm run type-check",
+    "type-check": "tsc --noEmit -p tsconfig.json",
+    "lint-staged": "npx lint-staged",
+    "check": "pnpm run format && pnpm run type-check && pnpm test",
+    "ci": "pnpm run lint && pnpm run type-check && pnpm test"
+  },
+  "dependencies": {
+    "tslib": "^2.8.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.10.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "@typescript-eslint/parser": "^8.46.3",
+    "c8": "^10.1.3",
+    "chai": "^6.2.0",
+    "eslint": "^9.39.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
+    "mocha": "^11.7.4",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "author": "Heroku",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/heroku/node-sentry-blanket.git"
+  },
+  "bugs": {
+    "type": "git",
+    "url": "https://github.com/heroku/node-sentry-blanket/issues"
+  },
+  "keywords": [
+    "sentry",
+    "rollbar",
+    "error-monitoring",
+    "pii",
+    "scrubbing",
+    "security"
+  ]
+}

@@ -1,0 +1,17 @@
+*-debug.log
+*-error.log
+*.tgz
+.DS_Store
+*.tsbuildinfo
+/lib
+/dist
+/tmp
+/oclif.manifest.json
+/package
+node_modules
+
+# Test coverage (c8)
+coverage/
+
+# local files
+*.local/*
