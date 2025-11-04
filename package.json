@@ -21,7 +21,7 @@
     "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.cjs.json && mkdir -p dist/cjs && echo '{\"type\": \"commonjs\"}' > dist/cjs/package.json",
     "build:esm": "rm -rf dist/esm && tsc -p tsconfig.esm.json",
     "build": "pnpm run build:cjs && pnpm run build:esm",
-    "test": "MCP_OAUTH_LOG_LEVEL=silent LOG_LEVEL=silent c8 mocha --require ./scripts/test-setup.mjs --forbid-only \"dist/cjs/**/*.test.js\"",
+    "test": "MCP_OAUTH_LOG_LEVEL=silent LOG_LEVEL=silent c8 mocha --require ./scripts/test-setup.mjs --forbid-only \"dist/esm/**/*.test.js\"",
     "prepare": "husky",
     "lint": "eslint \"src/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix",

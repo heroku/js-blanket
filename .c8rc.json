@@ -1,15 +1,11 @@
 {
   "all": true,
-  "include": ["src/**/*.ts"],
-  "exclude": [
-    "dist/**/*",
-    "**/*.test.ts",
-    "test/**/*",
-    "**/*types.ts",
-    "node_modules/**/*"
-  ],
+  "include": ["dist/esm/**/*.js"],
+  "exclude": ["**/*.test.js", "test/**/*", "node_modules/**/*"],
   "reporter": ["text", "html", "text-summary"],
   "clean": true,
   "temp-directory": "./coverage/tmp",
-  "report-dir": "./coverage"
+  "report-dir": "./coverage",
+  "src": "src",
+  "excludeNodeModules": true
 }
