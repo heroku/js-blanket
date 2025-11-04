@@ -5,7 +5,8 @@
     "moduleResolution": "Node",
     "outDir": "./dist/cjs",
     "target": "ES2022",
-    "declaration": false
+    "declaration": false,
+    "tsBuildInfoFile": "./dist/cjs/.tsbuildinfo"
   },
   "include": ["src/**/*"]
 }
