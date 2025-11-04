@@ -149,7 +149,7 @@ export class Scrubber {
     try {
       // Fast path for JSON-serializable objects
       return JSON.parse(JSON.stringify(obj));
-    } catch (e) {
+    } catch {
       // Fallback for objects with circular references
       const seen = new WeakMap();
 
