@@ -23,6 +23,7 @@
     "build": "pnpm run build:cjs && pnpm run build:esm",
     "demo": "pnpm run build:esm && node dist/esm/demo.js",
     "test": "MCP_OAUTH_LOG_LEVEL=silent LOG_LEVEL=silent c8 mocha --require ./scripts/test-setup.mjs --forbid-only \"dist/esm/**/*.test.js\"",
+    "test:sentry": "tsx src/sentry-scrubbing-test.ts",
     "prepare": "husky",
     "lint": "eslint \"src/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix",
@@ -39,6 +40,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@sentry/node": "^10.23.0",
     "@types/chai": "^5.2.3",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.10.0",
@@ -46,11 +48,13 @@
     "@typescript-eslint/parser": "^8.46.3",
     "c8": "^10.1.3",
     "chai": "^6.2.0",
+    "dotenv": "^17.2.3",
     "eslint": "^9.39.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.6",
     "mocha": "^11.7.4",
     "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   },
   "publishConfig": {
