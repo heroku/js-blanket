@@ -334,5 +334,132 @@ describe('Scrubber', () => {
       expect(scrubber.scrub(123).data).to.equal(123);
       expect(scrubber.scrub(true).data).to.equal(true);
     });
+
+    it('scrubs entire array element by index path', () => {
+      // Tests lines 76-78: scrubbing entire array element, not just a field
+      const scrubber = new Scrubber({
+        paths: ['users[0]', 'items[1]'], // Scrub specific array elements by full path
+      });
+
+      const input = {
+        users: [
+          { name: 'bob', email: 'bob@example.com' }, // Should be scrubbed entirely
+          { name: 'alice', email: 'alice@example.com' }, // Not scrubbed
+        ],
+        items: [
+          { id: 1, value: 'keep' }, // Not scrubbed
+          { id: 2, value: 'scrub' }, // Should be scrubbed entirely
+        ],
+      };
+
+      const { data } = scrubber.scrub(input);
+      expect(data.users?.[0]).to.equal('[SCRUBBED]');
+      expect(data.users?.[1]?.name).to.equal('alice'); // Not scrubbed
+      expect(data.items?.[0]?.value).to.equal('keep'); // Not scrubbed
+      expect(data.items?.[1]).to.equal('[SCRUBBED]'); // Entire element scrubbed
+    });
+
+    it('scrubs array index across all arrays', () => {
+      // Tests that index-only paths (e.g., '0') scrub that index in ALL arrays
+      const scrubber = new Scrubber({
+        paths: ['1'], // Scrub index 1 of ANY array
+      });
+
+      const input = {
+        users: [
+          { name: 'bob' }, // Index 0 - not scrubbed
+          { name: 'alice' }, // Index 1 - scrubbed
+          { name: 'charlie' }, // Index 2 - not scrubbed
+        ],
+        teams: [
+          { id: 'team-a' }, // Index 0 - not scrubbed
+          { id: 'team-b' }, // Index 1 - scrubbed
+        ],
+      };
+
+      const { data } = scrubber.scrub(input);
+      expect(data.users?.[0]?.name).to.equal('bob');
+      expect(data.users?.[1]).to.equal('[SCRUBBED]'); // Scrubbed by index
+      expect(data.users?.[2]?.name).to.equal('charlie');
+      expect(data.teams?.[0]?.id).to.equal('team-a');
+      expect(data.teams?.[1]).to.equal('[SCRUBBED]'); // Scrubbed by index
+    });
+
+    it('handles deeply nested objects (10+ levels)', () => {
+      // Validates discovery doc requirement: "Scrubs nested objects 10+ levels deep"
+      const scrubber = new Scrubber({
+        fields: ['secret'],
+      });
+
+      // Build a 15-level deep object
+      const input: any = { level: 1 };
+      let current = input;
+      for (let i = 2; i <= 15; i++) {
+        current.nested = { level: i };
+        current = current.nested;
+      }
+      // Add secret at the deepest level
+      current.secret = 'deep-secret';
+      current.public = 'visible';
+
+      const { data } = scrubber.scrub(input);
+
+      // Navigate to the deepest level
+      let deepest: any = data;
+      for (let i = 1; i < 15; i++) {
+        expect(deepest.level).to.equal(i);
+        deepest = deepest.nested;
+      }
+
+      // Verify scrubbing worked at 15 levels deep
+      expect(deepest.level).to.equal(15);
+      expect(deepest.secret).to.equal('[SCRUBBED]');
+      expect(deepest.public).to.equal('visible');
+    });
+
+    it('handles circular references in deep clone fallback (arrays)', () => {
+      // Tests lines 166-172: circular reference deep clone for arrays
+      const scrubber = new Scrubber({
+        fields: ['password'],
+      });
+
+      // Create an object with circular references that will trigger the fallback clone
+      const parent: any = { name: 'parent', password: 'secret' };
+      const child1: any = { name: 'child1', items: [] };
+      const child2 = { name: 'child2', password: 'hidden' };
+
+      // Create circular reference in an array
+      child1.items = [child2, parent]; // Array contains parent
+      parent.children = [child1]; // Parent contains array with circular ref
+
+      const { data } = scrubber.scrub(parent);
+
+      // Verify scrubbing happened
+      expect(data.password).to.equal('[SCRUBBED]');
+      expect(data.children?.[0]?.name).to.equal('child1');
+
+      // Verify circular reference was handled in the array
+      expect(data.children?.[0]?.items?.[1]).to.equal('[Circular Reference]');
+    });
+
+    it('handles arrays with circular self-reference', () => {
+      // Additional test for circular array deep cloning
+      const scrubber = new Scrubber({
+        fields: ['token'],
+      });
+
+      const obj: any = {
+        token: 'secret-token',
+        list: [{ name: 'item1' }],
+      };
+      // Array references the parent object
+      obj.list.push(obj);
+
+      const { data } = scrubber.scrub(obj);
+
+      expect(data.token).to.equal('[SCRUBBED]');
+      expect(data.list?.[0]?.name).to.equal('item1');
+      expect(data.list?.[1]).to.equal('[Circular Reference]');
+    });
   });
 });
