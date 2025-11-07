@@ -11,7 +11,7 @@
  * - Edge cases and error handling
  */
 
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import {
   initSentryWithBlanket,

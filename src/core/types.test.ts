@@ -75,10 +75,10 @@ describe('Type Safety', () => {
         metadata: { lastLogin: '2024-01-01', loginCount: 42 },
       };
 
-      const result = scrubber.scrub(profile);
+      const _result = scrubber.scrub(profile);
 
       // Compile-time assertion
-      const typeCheck: AssertType<typeof result.data, UserProfile> = true;
+      const typeCheck: AssertType<typeof _result.data, UserProfile> = true;
       expect(typeCheck).to.be.true;
     });
 
@@ -107,7 +107,6 @@ describe('Type Safety', () => {
     });
 
     it('preserves union types', () => {
-      type StringOrNumber = string | number;
       type ComplexUnion =
         | { type: 'user'; name: string; email: string }
         | { type: 'admin'; name: string; permissions: string[] };
@@ -119,10 +118,10 @@ describe('Type Safety', () => {
         email: 'john@example.com',
       };
 
-      const result = scrubber.scrub(data);
+      const _result = scrubber.scrub(data);
 
       // Compile-time assertion
-      const typeCheck: AssertType<typeof result.data, ComplexUnion> = true;
+      const typeCheck: AssertType<typeof _result.data, ComplexUnion> = true;
       expect(typeCheck).to.be.true;
     });
 
@@ -167,10 +166,10 @@ describe('Type Safety', () => {
         password: 'secret',
       };
 
-      const result = scrubber.scrub(user);
+      const _result = scrubber.scrub(user);
 
       // Compile-time assertion
-      const typeCheck: AssertType<typeof result.data, PartialUser> = true;
+      const typeCheck: AssertType<typeof _result.data, PartialUser> = true;
       expect(typeCheck).to.be.true;
     });
   });
@@ -205,10 +204,10 @@ describe('Type Safety', () => {
 
       const scrubber = new Scrubber({ fields: ['a'] });
       const input: Input = { a: 'test', b: 42, c: true };
-      const result: ScrubResult<Input> = scrubber.scrub(input);
+      const _result: ScrubResult<Input> = scrubber.scrub(input);
 
       // Compile-time assertion
-      const typeCheck: AssertType<typeof result.data, Input> = true;
+      const typeCheck: AssertType<typeof _result.data, Input> = true;
       expect(typeCheck).to.be.true;
     });
   });
@@ -279,11 +278,11 @@ describe('Type Safety', () => {
         },
       };
 
-      const result = scrubber.scrub(data);
+      const _result = scrubber.scrub(data);
 
       // Compile-time assertion
       const typeCheck: AssertType<
-        typeof result.data,
+        typeof _result.data,
         DeepNested<number>
       > = true;
       expect(typeCheck).to.be.true;
@@ -316,10 +315,10 @@ describe('Type Safety', () => {
         },
       ];
 
-      const result = scrubber.scrub(events);
+      const _result = scrubber.scrub(events);
 
       // Compile-time assertion
-      const typeCheck: AssertType<typeof result.data, Event[]> = true;
+      const typeCheck: AssertType<typeof _result.data, Event[]> = true;
       expect(typeCheck).to.be.true;
     });
 
@@ -332,10 +331,10 @@ describe('Type Safety', () => {
         user2: { name: 'Jane', password: 'secret2' },
       };
 
-      const result = scrubber.scrub(users);
+      const _result = scrubber.scrub(users);
 
       // Compile-time assertion
-      const typeCheck: AssertType<typeof result.data, UserMap> = true;
+      const typeCheck: AssertType<typeof _result.data, UserMap> = true;
       expect(typeCheck).to.be.true;
     });
 
@@ -365,10 +364,10 @@ describe('Type Safety', () => {
         array: [1, 2, 3],
       };
 
-      const result = scrubber.scrub(data);
+      const _result = scrubber.scrub(data);
 
       // Compile-time assertion
-      const typeCheck: AssertType<typeof result.data, MixedData> = true;
+      const typeCheck: AssertType<typeof _result.data, MixedData> = true;
       expect(typeCheck).to.be.true;
     });
 
@@ -390,10 +389,10 @@ describe('Type Safety', () => {
       const scrubber = new Scrubber({ fields: ['password'] });
       const data: unknown = { user: 'john', password: 'secret' };
 
-      const result = scrubber.scrub(data);
+      const _result = scrubber.scrub(data);
 
       // Compile-time assertion: unknown in, unknown out
-      const typeCheck: AssertType<typeof result.data, unknown> = true;
+      const typeCheck: AssertType<typeof _result.data, unknown> = true;
       expect(typeCheck).to.be.true;
     });
   });
@@ -507,10 +506,10 @@ describe('Type Safety', () => {
         value: null,
       };
 
-      const result = scrubber.scrub(data);
+      const _result = scrubber.scrub(data);
 
       // Compile-time assertion
-      const typeCheck: AssertType<typeof result.data, NullableData> = true;
+      const typeCheck: AssertType<typeof _result.data, NullableData> = true;
       expect(typeCheck).to.be.true;
     });
   });
