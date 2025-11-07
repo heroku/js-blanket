@@ -25,7 +25,7 @@
     "prepare": "husky",
     "lint": "eslint \"src/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix",
-    "prettier": "prettier . --write --config ./.prettier.mjs",
+    "prettier": "prettier . --write",
     "format": "pnpm run prettier && pnpm run lint:fix",
     "pretest": "pnpm run build:cjs && pnpm run build:esm && pnpm run type-check",
     "type-check": "tsc --noEmit -p tsconfig.json",
