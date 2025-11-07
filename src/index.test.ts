@@ -8,7 +8,7 @@ import {
   PII_PATTERNS,
 } from './index.js';
 
-describe('node-blanket', () => {
+describe('js-blanket', () => {
   it('exports Scrubber class', () => {
     expect(Scrubber).to.be.a('function');
     const scrubber = new Scrubber({ fields: ['password'] });

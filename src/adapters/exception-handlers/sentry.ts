@@ -5,8 +5,8 @@
  * to automatically scrub Sentry events before they're sent.
  *
  * Usage:
- *   import { initSentryWithBlanket } from '@heroku/node-blanket/sentry';
- *   import { HEROKU_FIELDS, PII_PATTERNS } from '@heroku/node-blanket';
+ *   import { initSentryWithBlanket } from '@heroku/js-blanket/sentry';
+ *   import { HEROKU_FIELDS, PII_PATTERNS } from '@heroku/js-blanket';
  *
  *   initSentryWithBlanket({
  *     dsn: process.env.SENTRY_DSN,
