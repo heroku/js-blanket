@@ -1,7 +1,7 @@
 /**
  * SPIKE DEMONSTRATION
  *
- * This file demonstrates the key concepts from the Node Blanket discovery:
+ * This file demonstrates the key concepts from the JS Blanket discovery:
  * 1. Core Scrubber with field/path/pattern matching
  * 2. Circular reference handling
  * 3. Deep object traversal

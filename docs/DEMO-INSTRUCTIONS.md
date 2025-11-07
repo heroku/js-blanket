@@ -1,4 +1,4 @@
-# Node Blanket - Demo Instructions
+# JS Blanket - Spike/Demo Instructions
 
 Quick guide to demonstrate the spike to the principal developer.
 
@@ -15,7 +15,7 @@ pnpm test
 ## What This Demonstrates
 
 This spike proves the core concepts from the
-[Node Blanket Discovery Document](./docs.local/node-blanket-discovery.md):
+[JS Blanket Discovery Document](./docs.local/js-blanket-discovery.md):
 
 ### ✅ Core Architecture
 
@@ -150,7 +150,7 @@ Shows:
 
 ## Next Steps (If Approved)
 
-See [Discovery Document](./docs.local/node-blanket-discovery.md) for full 7-week
+See [Discovery Document](./docs.local/js-blanket-discovery.md) for full 7-week
 implementation plan:
 
 - **Week 1**: Complete core engine + performance benchmarks
@@ -200,4 +200,4 @@ From `oauth-provider-adapters` `redaction.ts`:
 **Status**: 🚀 Ready for principal developer review
 
 **Full Context**: See
-[Node Blanket Discovery Document](./docs.local/node-blanket-discovery.md)
+[JS Blanket Discovery Document](./docs.local/js-blanket-discovery.md)
