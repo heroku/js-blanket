@@ -16,7 +16,7 @@ import { ScrubConfig, ScrubResult } from './types.js';
  * - **Performance**: <1ms p95 for logging, <10ms p95 for exception handling (544k+ ops/sec)
  *
  * ### Pattern Adoption
- * Patterns adopted from `oauth-provider-adapters-for-mcp/src/logging/redaction.ts`:
+ * Patterns adopted from `@heroku/oauth-provider-adapters-for-mcp/src/logging/redaction.ts`:
  * - Deep recursive traversal with circular reference detection
  * - Immutable cloning strategy with fallback for complex objects
  * - Nested path resolution (e.g., 'user.profile.email')

@@ -568,7 +568,7 @@ logger.info('User authenticated', {
 
 ---
 
-## oauth-provider-adapters Migration
+## oauth-provider-adapters Migration Example
 
 If you're migrating from `oauth-provider-adapters-for-mcp`, this is a drop-in
 replacement for the `redaction.ts` utility.

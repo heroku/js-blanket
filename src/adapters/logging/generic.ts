@@ -4,9 +4,6 @@ import { ScrubConfig } from '../../core/types.js';
 /**
  * Create a generic redactor for use with any logging library
  *
- * This is the adapter that oauth-provider-adapters-for-mcp will use
- * to replace its redaction.ts utility.
- *
  * @example
  * ```typescript
  * const redactor = createRedactor({
