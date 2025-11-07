@@ -22,11 +22,11 @@ with Sentry in both Node.js and browser environments.
 
 ```typescript
 import * as Sentry from '@sentry/node';
-import { initSentryWithBlanket, Scrubber } from '@heroku/js-blanket';
+import { initSentryWithBlanket } from '@heroku/js-blanket';
 import { HEROKU_FIELDS } from '@heroku/js-blanket';
 
-// Configure Sentry with automatic PII scrubbing
-const config = {
+// One-step initialization with automatic PII scrubbing
+initSentryWithBlanket(Sentry, {
   dsn: process.env.SENTRY_DSN,
   environment: process.env.NODE_ENV || 'development',
   tracesSampleRate: 0.1,
@@ -34,12 +34,7 @@ const config = {
   // Scrubbing configuration
   fields: HEROKU_FIELDS,
   replacement: '[SCRUBBED]',
-};
-
-initSentryWithBlanket(config, Scrubber);
-
-// Initialize Sentry with the wrapped config
-Sentry.init(config);
+});
 
 // Now all errors will be scrubbed automatically
 Sentry.captureException(new Error('User password: secret123')); // PII scrubbed
@@ -50,16 +45,12 @@ Sentry.captureException(new Error('User password: secret123')); // PII scrubbed
 ```typescript
 import express from 'express';
 import * as Sentry from '@sentry/node';
-import {
-  initSentryWithBlanket,
-  Scrubber,
-  HEROKU_FIELDS,
-} from '@heroku/js-blanket';
+import { initSentryWithBlanket, HEROKU_FIELDS } from '@heroku/js-blanket';
 
 const app = express();
 
-// Configure and initialize Sentry with scrubbing
-const config = {
+// One-step initialization with automatic PII scrubbing
+initSentryWithBlanket(Sentry, {
   dsn: process.env.SENTRY_DSN,
   environment: process.env.NODE_ENV,
   integrations: [
@@ -68,10 +59,7 @@ const config = {
   ],
   tracesSampleRate: 0.1,
   fields: [...HEROKU_FIELDS, 'sessionToken', 'csrf_token'],
-};
-
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+});
 
 // Sentry request handler must be first
 app.use(Sentry.Handlers.requestHandler());
@@ -93,13 +81,10 @@ app.listen(3000);
 
 ```typescript
 import * as Sentry from '@sentry/node';
-import {
-  initSentryWithBlanket,
-  Scrubber,
-  HEROKU_FIELDS,
-} from '@heroku/js-blanket';
+import { initSentryWithBlanket, HEROKU_FIELDS } from '@heroku/js-blanket';
 
-const config = {
+// One-step initialization with performance monitoring and scrubbing
+initSentryWithBlanket(Sentry, {
   dsn: process.env.SENTRY_DSN,
   environment: 'production',
 
@@ -114,10 +99,7 @@ const config = {
     /\b[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,}\b/g, // Email
     /\b\d{3}-\d{2}-\d{4}\b/g, // SSN
   ],
-};
-
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+});
 
 // Transaction span data will be scrubbed
 const transaction = Sentry.startTransaction({
@@ -146,11 +128,7 @@ transaction.finish();
 
 ```typescript
 import * as Sentry from '@sentry/browser';
-import {
-  initSentryWithBlanket,
-  Scrubber,
-  HEROKU_FIELDS,
-} from '@heroku/js-blanket';
+import { initSentryWithBlanket, HEROKU_FIELDS } from '@heroku/js-blanket';
 
 // Configure Sentry with automatic PII scrubbing
 const config = {
@@ -171,8 +149,7 @@ const config = {
   replaysOnErrorSampleRate: 1.0,
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 
 // Errors thrown in browser will be scrubbed
 throw new Error('API token: abc123'); // Token scrubbed
@@ -215,8 +192,7 @@ const config = {
   paths: ['user.email', 'state.auth.token'],
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 
 // Use Sentry error boundary in your app
 export const App = () => (
@@ -231,11 +207,7 @@ export const App = () => (
 ```typescript
 import { createApp } from 'vue';
 import * as Sentry from '@sentry/vue';
-import {
-  initSentryWithBlanket,
-  Scrubber,
-  HEROKU_FIELDS,
-} from '@heroku/js-blanket';
+import { initSentryWithBlanket, HEROKU_FIELDS } from '@heroku/js-blanket';
 import App from './App.vue';
 
 const app = createApp(App);
@@ -263,8 +235,7 @@ const config = {
   hooks: ['activate', 'mount', 'update'],
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 
 app.mount('#app');
 ```
@@ -273,7 +244,7 @@ app.mount('#app');
 
 ```typescript
 import * as Sentry from '@sentry/browser';
-import { initSentryWithBlanket, Scrubber } from '@heroku/js-blanket';
+import { initSentryWithBlanket } from '@heroku/js-blanket';
 
 const config = {
   dsn: 'https://your-key@sentry.io/project',
@@ -301,8 +272,7 @@ const config = {
   ],
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 
 // These console logs will be captured as breadcrumbs and scrubbed
 console.log('User logged in: user@example.com'); // Email scrubbed
@@ -359,15 +329,14 @@ const config = {
   replacement: '[REDACTED]',
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 ```
 
 ### Regex Field Patterns
 
 ```typescript
 import * as Sentry from '@sentry/node';
-import { initSentryWithBlanket, Scrubber } from '@heroku/js-blanket';
+import { initSentryWithBlanket } from '@heroku/js-blanket';
 
 const config = {
   dsn: process.env.SENTRY_DSN,
@@ -382,8 +351,7 @@ const config = {
   ],
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 ```
 
 ---
@@ -394,11 +362,7 @@ Sentry.init(config);
 
 ```typescript
 import * as Sentry from '@sentry/node';
-import {
-  initSentryWithBlanket,
-  Scrubber,
-  HEROKU_FIELDS,
-} from '@heroku/js-blanket';
+import { initSentryWithBlanket, HEROKU_FIELDS } from '@heroku/js-blanket';
 
 // HEROKU_FIELDS includes: heroku_oauth_token, sudo_oauth_token, www-sso-session, etc.
 const config = {
@@ -406,8 +370,7 @@ const config = {
   fields: HEROKU_FIELDS,
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 ```
 
 ### Using GDPR_FIELDS
@@ -426,8 +389,7 @@ const config = {
   fields: GDPR_FIELDS,
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 ```
 
 ### Using PCI_FIELDS
@@ -446,8 +408,7 @@ const config = {
   fields: PCI_FIELDS,
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 ```
 
 ### Combining Presets
@@ -475,8 +436,7 @@ const config = {
   ],
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 ```
 
 ---
@@ -487,7 +447,7 @@ Sentry.init(config);
 
 ```typescript
 import * as Sentry from '@sentry/node';
-import { initSentryWithBlanket, Scrubber } from '@heroku/js-blanket';
+import { initSentryWithBlanket } from '@heroku/js-blanket';
 
 const config = {
   dsn: process.env.SENTRY_DSN,
@@ -524,8 +484,7 @@ const config = {
   replacement: '[PII_REDACTED]',
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 ```
 
 ---
@@ -536,7 +495,7 @@ Sentry.init(config);
 
 ```typescript
 import * as Sentry from '@sentry/node';
-import { initSentryWithBlanket, Scrubber } from '@heroku/js-blanket';
+import { initSentryWithBlanket } from '@heroku/js-blanket';
 
 const config = {
   dsn: process.env.SENTRY_DSN,
@@ -563,15 +522,14 @@ const config = {
   },
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 ```
 
 ### Disabling User Callback Preservation
 
 ```typescript
 import * as Sentry from '@sentry/node';
-import { initSentryWithBlanket, Scrubber } from '@heroku/js-blanket';
+import { initSentryWithBlanket } from '@heroku/js-blanket';
 
 const config = {
   dsn: process.env.SENTRY_DSN,
@@ -587,15 +545,14 @@ const config = {
   },
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 ```
 
 ### Transaction Callback
 
 ```typescript
 import * as Sentry from '@sentry/node';
-import { initSentryWithBlanket, Scrubber } from '@heroku/js-blanket';
+import { initSentryWithBlanket } from '@heroku/js-blanket';
 
 const config = {
   dsn: process.env.SENTRY_DSN,
@@ -615,8 +572,7 @@ const config = {
   },
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 ```
 
 ---
@@ -655,11 +611,7 @@ rollbar.error('Error occurred', { user: { email: 'user@example.com' } });
 
 ```typescript
 import * as Sentry from '@sentry/node';
-import {
-  initSentryWithBlanket,
-  Scrubber,
-  HEROKU_FIELDS,
-} from '@heroku/js-blanket';
+import { initSentryWithBlanket, HEROKU_FIELDS } from '@heroku/js-blanket';
 
 const config = {
   dsn: process.env.SENTRY_DSN,
@@ -684,8 +636,7 @@ const config = {
   },
 };
 
-initSentryWithBlanket(config, Scrubber);
-Sentry.init(config);
+initSentryWithBlanket(Sentry, config);
 
 Sentry.captureException(new Error('Error occurred'), {
   extra: { user: { email: 'user@example.com' } }, // Email scrubbed
@@ -758,15 +709,12 @@ const config = {
    scrubbing
 
 ```typescript
-import { createSentryEventScrubber, Scrubber } from '@heroku/js-blanket';
+import { createSentryEventScrubber } from '@heroku/js-blanket';
 
-const scrubber = createSentryEventScrubber(
-  {
-    fields: ['password'],
-    patterns: [/\b[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,}\b/g],
-  },
-  Scrubber
-);
+const scrubber = createSentryEventScrubber({
+  fields: ['password'],
+  patterns: [/\b[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,}\b/g],
+});
 
 const testEvent = {
   message: 'Error for user@example.com',

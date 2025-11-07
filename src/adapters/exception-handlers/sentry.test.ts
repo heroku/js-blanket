@@ -18,13 +18,29 @@ import {
   createSentryEventScrubber,
   type SentryEvent,
   type SentryBlanketConfig,
+  type SentryOptions,
 } from './sentry.js';
-import { Scrubber } from '../../core/scrubber.js';
 import { HEROKU_FIELDS, GDPR_FIELDS, PCI_FIELDS } from '../../core/presets.js';
 
 // ============================================================================
 // Test Fixtures
 // ============================================================================
+
+/**
+ * Create a mock Sentry module for testing
+ *
+ * Captures all calls to init() for verification in tests
+ */
+function createMockSentry() {
+  const calls: SentryOptions[] = [];
+  return {
+    init: (config: SentryOptions) => {
+      calls.push(config);
+    },
+    getCalls: () => calls,
+    getLastCall: () => calls[calls.length - 1],
+  };
+}
 
 function createMockSentryEvent(): SentryEvent {
   return {
@@ -126,13 +142,10 @@ function createMockTransactionEvent(): SentryEvent {
 
 describe('createSentryEventScrubber', () => {
   it('should scrub sensitive fields from event', () => {
-    const scrubber = createSentryEventScrubber(
-      {
-        fields: ['password', 'apiToken'],
-        replacement: '[SCRUBBED]',
-      },
-      Scrubber
-    );
+    const scrubber = createSentryEventScrubber({
+      fields: ['password', 'apiToken'],
+      replacement: '[SCRUBBED]',
+    });
 
     const event = createMockSentryEvent();
     const scrubbed = scrubber(event);
@@ -159,13 +172,10 @@ describe('createSentryEventScrubber', () => {
   });
 
   it('should scrub sensitive paths from event', () => {
-    const scrubber = createSentryEventScrubber(
-      {
-        paths: ['request.headers.authorization', 'user.email'],
-        replacement: '[REDACTED]',
-      },
-      Scrubber
-    );
+    const scrubber = createSentryEventScrubber({
+      paths: ['request.headers.authorization', 'user.email'],
+      replacement: '[REDACTED]',
+    });
 
     const event = createMockSentryEvent();
     const scrubbed = scrubber(event);
@@ -179,16 +189,13 @@ describe('createSentryEventScrubber', () => {
   });
 
   it('should scrub patterns from string content', () => {
-    const scrubber = createSentryEventScrubber(
-      {
-        patterns: [
-          /\b[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,}\b/g, // Email pattern
-          /\b[a-f0-9]{32}\b/g, // MD5 hash pattern
-        ],
-        replacement: '[EMAIL]',
-      },
-      Scrubber
-    );
+    const scrubber = createSentryEventScrubber({
+      patterns: [
+        /\b[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,}\b/g, // Email pattern
+        /\b[a-f0-9]{32}\b/g, // MD5 hash pattern
+      ],
+      replacement: '[EMAIL]',
+    });
 
     const event = createMockSentryEvent();
     const scrubbed = scrubber(event);
@@ -202,15 +209,12 @@ describe('createSentryEventScrubber', () => {
   });
 
   it('should handle all scrubbing modes together', () => {
-    const scrubber = createSentryEventScrubber(
-      {
-        fields: ['password', 'apiToken'],
-        paths: ['request.headers.authorization'],
-        patterns: [/\b[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,}\b/g],
-        replacement: '[SCRUBBED]',
-      },
-      Scrubber
-    );
+    const scrubber = createSentryEventScrubber({
+      fields: ['password', 'apiToken'],
+      paths: ['request.headers.authorization'],
+      patterns: [/\b[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,}\b/g],
+      replacement: '[SCRUBBED]',
+    });
 
     const event = createMockSentryEvent();
     const scrubbed = scrubber(event);
@@ -233,13 +237,10 @@ describe('createSentryEventScrubber', () => {
   });
 
   it('should handle preset field lists', () => {
-    const scrubber = createSentryEventScrubber(
-      {
-        fields: [...HEROKU_FIELDS, ...GDPR_FIELDS, ...PCI_FIELDS],
-        replacement: '[PRESET-SCRUBBED]',
-      },
-      Scrubber
-    );
+    const scrubber = createSentryEventScrubber({
+      fields: [...HEROKU_FIELDS, ...GDPR_FIELDS, ...PCI_FIELDS],
+      replacement: '[PRESET-SCRUBBED]',
+    });
 
     const event = createMockSentryEvent();
     const scrubbed = scrubber(event);
@@ -261,13 +262,10 @@ describe('createSentryEventScrubber', () => {
   });
 
   it('should handle events with no sensitive data', () => {
-    const scrubber = createSentryEventScrubber(
-      {
-        fields: ['password'],
-        replacement: '[SCRUBBED]',
-      },
-      Scrubber
-    );
+    const scrubber = createSentryEventScrubber({
+      fields: ['password'],
+      replacement: '[SCRUBBED]',
+    });
 
     const event: SentryEvent = {
       message: 'Simple error',
@@ -281,13 +279,10 @@ describe('createSentryEventScrubber', () => {
   });
 
   it('should handle circular references in events', () => {
-    const scrubber = createSentryEventScrubber(
-      {
-        fields: ['password'],
-        replacement: '[SCRUBBED]',
-      },
-      Scrubber
-    );
+    const scrubber = createSentryEventScrubber({
+      fields: ['password'],
+      replacement: '[SCRUBBED]',
+    });
 
     const event: SentryEvent = {
       message: 'Error with circular ref',
@@ -312,6 +307,7 @@ describe('createSentryEventScrubber', () => {
 
 describe('initSentryWithBlanket - Configuration', () => {
   it('should create scrubber with provided configuration', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       environment: 'test',
@@ -321,24 +317,36 @@ describe('initSentryWithBlanket - Configuration', () => {
       replacement: '[CUSTOM]',
     };
 
-    // Should not throw
+    // Should not throw and should call Sentry.init()
     assert.doesNotThrow(() => {
-      initSentryWithBlanket(config, Scrubber);
+      initSentryWithBlanket(mockSentry, config);
     });
+
+    // Verify Sentry.init() was called
+    const calls = mockSentry.getCalls();
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]?.dsn, 'https://test@sentry.io/123');
+    assert.equal(calls[0]?.environment, 'test');
   });
 
   it('should use default values for missing scrubbing config', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
     };
 
     // Should not throw and use defaults
     assert.doesNotThrow(() => {
-      initSentryWithBlanket(config, Scrubber);
+      initSentryWithBlanket(mockSentry, config);
     });
+
+    // Verify Sentry.init() was called
+    const calls = mockSentry.getCalls();
+    assert.equal(calls.length, 1);
   });
 
   it('should accept empty scrubbing configuration', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: [],
@@ -347,8 +355,12 @@ describe('initSentryWithBlanket - Configuration', () => {
     };
 
     assert.doesNotThrow(() => {
-      initSentryWithBlanket(config, Scrubber);
+      initSentryWithBlanket(mockSentry, config);
     });
+
+    // Verify Sentry.init() was called
+    const calls = mockSentry.getCalls();
+    assert.equal(calls.length, 1);
   });
 });
 
@@ -361,6 +373,7 @@ describe('initSentryWithBlanket - Callback Preservation', () => {
     let userCallbackCalled = false;
     let eventReceivedInCallback: SentryEvent | null = null;
 
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: ['password'],
@@ -374,11 +387,14 @@ describe('initSentryWithBlanket - Callback Preservation', () => {
       },
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
+
+    // Get the wrapped config that was passed to Sentry.init()
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     // Mock event processing
     const mockEvent = createMockSentryEvent();
-    const wrappedCallback = config.beforeSend;
 
     if (wrappedCallback) {
       const result = wrappedCallback(mockEvent);
@@ -401,6 +417,7 @@ describe('initSentryWithBlanket - Callback Preservation', () => {
   it('should preserve user beforeSendTransaction callback', () => {
     let userCallbackCalled = false;
 
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: ['password', 'apiKey'],
@@ -410,10 +427,13 @@ describe('initSentryWithBlanket - Callback Preservation', () => {
       },
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
+
+    // Get the wrapped config that was passed to Sentry.init()
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSendTransaction;
 
     const mockTransaction = createMockTransactionEvent();
-    const wrappedCallback = config.beforeSendTransaction;
 
     if (wrappedCallback) {
       wrappedCallback(mockTransaction);
@@ -427,6 +447,7 @@ describe('initSentryWithBlanket - Callback Preservation', () => {
   it('should disable user callback when preserveUserCallback is false', () => {
     let userCallbackCalled = false;
 
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: ['password'],
@@ -437,10 +458,13 @@ describe('initSentryWithBlanket - Callback Preservation', () => {
       },
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
+
+    // Get the wrapped config that was passed to Sentry.init()
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     const mockEvent = createMockSentryEvent();
-    const wrappedCallback = config.beforeSend;
 
     if (wrappedCallback) {
       wrappedCallback(mockEvent);
@@ -449,6 +473,7 @@ describe('initSentryWithBlanket - Callback Preservation', () => {
   });
 
   it('should allow user callback to filter events by returning null', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: ['password'],
@@ -461,10 +486,13 @@ describe('initSentryWithBlanket - Callback Preservation', () => {
       },
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
+
+    // Get the wrapped config that was passed to Sentry.init()
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     const mockEvent = createMockSentryEvent(); // Contains "Test" in message
-    const wrappedCallback = config.beforeSend;
 
     if (wrappedCallback) {
       const result = wrappedCallback(mockEvent);
@@ -479,15 +507,17 @@ describe('initSentryWithBlanket - Callback Preservation', () => {
 
 describe('initSentryWithBlanket - Event Scrubbing', () => {
   it('should scrub sensitive fields from error events', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: ['password', 'apiToken', 'authorization'],
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
 
     const mockEvent = createMockSentryEvent();
-    const wrappedCallback = config.beforeSend;
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     if (wrappedCallback) {
       const result = wrappedCallback(mockEvent);
@@ -509,16 +539,18 @@ describe('initSentryWithBlanket - Event Scrubbing', () => {
   });
 
   it('should scrub breadcrumbs', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: ['authorization'],
       patterns: [/\b[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,}\b/g],
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
 
     const mockEvent = createMockSentryEvent();
-    const wrappedCallback = config.beforeSend;
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     if (wrappedCallback) {
       const result = wrappedCallback(mockEvent);
@@ -539,15 +571,17 @@ describe('initSentryWithBlanket - Event Scrubbing', () => {
   });
 
   it('should scrub exception messages with patterns', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       patterns: [/\btoken\s+\w+/gi],
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
 
     const mockEvent = createMockSentryEvent();
-    const wrappedCallback = config.beforeSend;
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     if (wrappedCallback) {
       const result = wrappedCallback(mockEvent);
@@ -559,12 +593,13 @@ describe('initSentryWithBlanket - Event Scrubbing', () => {
   });
 
   it('should handle deeply nested event structures', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: ['secret'],
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
 
     const mockEvent: SentryEvent = {
       message: 'Deep nesting test',
@@ -583,7 +618,8 @@ describe('initSentryWithBlanket - Event Scrubbing', () => {
       },
     };
 
-    const wrappedCallback = config.beforeSend;
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     if (wrappedCallback) {
       const result = wrappedCallback(mockEvent);
@@ -606,15 +642,17 @@ describe('initSentryWithBlanket - Event Scrubbing', () => {
 
 describe('initSentryWithBlanket - Transaction Scrubbing', () => {
   it('should scrub sensitive fields from transaction events', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: ['password', 'apiKey'],
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
 
     const mockTransaction = createMockTransactionEvent();
-    const wrappedCallback = config.beforeSendTransaction;
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSendTransaction;
 
     if (wrappedCallback) {
       const result = wrappedCallback(mockTransaction);
@@ -637,15 +675,17 @@ describe('initSentryWithBlanket - Transaction Scrubbing', () => {
   });
 
   it('should preserve trace information in transactions', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: ['password'],
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
 
     const mockTransaction = createMockTransactionEvent();
-    const wrappedCallback = config.beforeSendTransaction;
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSendTransaction;
 
     if (wrappedCallback) {
       const result = wrappedCallback(mockTransaction);
@@ -664,18 +704,20 @@ describe('initSentryWithBlanket - Transaction Scrubbing', () => {
 
 describe('initSentryWithBlanket - Edge Cases', () => {
   it('should handle null/undefined event properties', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: ['password'],
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
 
     const mockEvent: SentryEvent = {
       level: 'error',
     };
 
-    const wrappedCallback = config.beforeSend;
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     if (wrappedCallback) {
       assert.doesNotThrow(() => {
@@ -685,19 +727,21 @@ describe('initSentryWithBlanket - Edge Cases', () => {
   });
 
   it('should handle events with no scrubbing needed', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: ['nonexistent_field'],
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
 
     const mockEvent: SentryEvent = {
       message: 'Simple message',
       level: 'info',
     };
 
-    const wrappedCallback = config.beforeSend;
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     if (wrappedCallback) {
       const result = wrappedCallback(mockEvent);
@@ -708,12 +752,13 @@ describe('initSentryWithBlanket - Edge Cases', () => {
   });
 
   it('should handle events with arrays of objects', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: ['password'],
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
 
     const mockEvent: SentryEvent = {
       message: 'Array test',
@@ -725,7 +770,8 @@ describe('initSentryWithBlanket - Edge Cases', () => {
       },
     };
 
-    const wrappedCallback = config.beforeSend;
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     if (wrappedCallback) {
       const result = wrappedCallback(mockEvent);
@@ -741,12 +787,13 @@ describe('initSentryWithBlanket - Edge Cases', () => {
   });
 
   it('should handle regex field patterns', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: [/api[-_]?key/i, /oauth[-_]?token/i],
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
 
     const mockEvent: SentryEvent = {
       message: 'Regex field test',
@@ -759,7 +806,8 @@ describe('initSentryWithBlanket - Edge Cases', () => {
       },
     };
 
-    const wrappedCallback = config.beforeSend;
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     if (wrappedCallback) {
       const result = wrappedCallback(mockEvent);
@@ -780,12 +828,13 @@ describe('initSentryWithBlanket - Edge Cases', () => {
 
 describe('initSentryWithBlanket - Preset Integration', () => {
   it('should work with HEROKU_FIELDS preset', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: HEROKU_FIELDS,
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
 
     const mockEvent: SentryEvent = {
       message: 'Heroku fields test',
@@ -795,7 +844,8 @@ describe('initSentryWithBlanket - Preset Integration', () => {
       },
     };
 
-    const wrappedCallback = config.beforeSend;
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     if (wrappedCallback) {
       const result = wrappedCallback(mockEvent);
@@ -807,12 +857,13 @@ describe('initSentryWithBlanket - Preset Integration', () => {
   });
 
   it('should work with combined presets', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: [...HEROKU_FIELDS, ...GDPR_FIELDS, ...PCI_FIELDS],
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
 
     const mockEvent: SentryEvent = {
       message: 'Combined presets test',
@@ -826,7 +877,8 @@ describe('initSentryWithBlanket - Preset Integration', () => {
       },
     };
 
-    const wrappedCallback = config.beforeSend;
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     if (wrappedCallback) {
       const result = wrappedCallback(mockEvent);
@@ -847,16 +899,18 @@ describe('initSentryWithBlanket - Preset Integration', () => {
 
 describe('initSentryWithBlanket - Performance', () => {
   it('should scrub events within exception handling latency target (<10ms p95)', () => {
+    const mockSentry = createMockSentry();
     const config: SentryBlanketConfig = {
       dsn: 'https://test@sentry.io/123',
       fields: [...HEROKU_FIELDS, ...GDPR_FIELDS],
       patterns: [/\b[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,}\b/g],
     };
 
-    initSentryWithBlanket(config, Scrubber);
+    initSentryWithBlanket(mockSentry, config);
 
     const mockEvent = createMockSentryEvent();
-    const wrappedCallback = config.beforeSend;
+    const wrappedConfig = mockSentry.getLastCall();
+    const wrappedCallback = wrappedConfig?.beforeSend;
 
     if (wrappedCallback) {
       const iterations = 100;

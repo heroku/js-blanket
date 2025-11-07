@@ -13,10 +13,10 @@
  *
  * ### Usage
  * ```typescript
- * import { initSentryWithBlanket } from '@heroku/js-blanket/sentry';
- * import { HEROKU_FIELDS } from '@heroku/js-blanket';
+ * import * as Sentry from '@sentry/node';
+ * import { initSentryWithBlanket, HEROKU_FIELDS } from '@heroku/js-blanket';
  *
- * initSentryWithBlanket({
+ * initSentryWithBlanket(Sentry, {
  *   dsn: process.env.SENTRY_DSN,
  *   environment: 'production',
  *   fields: HEROKU_FIELDS,
@@ -32,7 +32,7 @@
  * @see {@link https://docs.sentry.io/platforms/javascript/configuration/filtering/}
  */
 
-import type { Scrubber } from '../../core/scrubber.js';
+import { Scrubber } from '../../core/scrubber.js';
 
 /**
  * Sentry Event interface
@@ -230,29 +230,26 @@ export interface SentryBlanketConfig extends SentryOptions {
  * ### Integration with Real Sentry SDK
  * ```typescript
  * import * as Sentry from '@sentry/node';
- * import { initSentryWithBlanket } from '@heroku/js-blanket/sentry';
- * import { Scrubber } from '@heroku/js-blanket';
+ * import { initSentryWithBlanket, HEROKU_FIELDS } from '@heroku/js-blanket';
  *
- * const config = initSentryWithBlanket({
+ * // One-step initialization with automatic PII scrubbing
+ * initSentryWithBlanket(Sentry, {
  *   dsn: process.env.SENTRY_DSN,
  *   environment: 'production',
- *   fields: ['password', 'apiToken']
- * }, Scrubber);
- *
- * // Then initialize real Sentry with the wrapped config
- * Sentry.init(config);
+ *   fields: HEROKU_FIELDS
+ * });
  * ```
  *
+ * @param SentryModule - The Sentry SDK module (@sentry/node or @sentry/browser)
  * @param config - Combined Sentry options + scrubbing configuration
- * @param ScrubberClass - The Scrubber class to use for scrubbing
- * @returns void (modifies config in place with wrapped callbacks)
+ * @returns void (initializes Sentry with scrubbing enabled)
  */
 export function initSentryWithBlanket(
-  config: SentryBlanketConfig,
-  ScrubberClass: typeof Scrubber
+  SentryModule: { init: (config: SentryOptions) => void },
+  config: SentryBlanketConfig
 ): void {
   // Create scrubber instance
-  const scrubber = new ScrubberClass({
+  const scrubber = new Scrubber({
     fields: config.fields || [],
     paths: config.paths || [],
     patterns: config.patterns || [],
@@ -264,40 +261,40 @@ export function initSentryWithBlanket(
   const userBeforeSend = config.beforeSend;
   const userBeforeSendTransaction = config.beforeSendTransaction;
 
-  // Wrap beforeSend for error events
-  config.beforeSend = (
-    event: SentryEvent,
-    hint?: unknown
-  ): SentryEvent | null => {
-    // 1. Scrub the event
-    const { data: scrubbedEvent } = scrubber.scrub(event);
+  // Build wrapped config with scrubbing callbacks
+  const wrappedConfig: SentryOptions = {
+    ...config,
+    // Wrap beforeSend for error events
+    beforeSend: (event: SentryEvent, hint?: unknown): SentryEvent | null => {
+      // 1. Scrub the event
+      const { data: scrubbedEvent } = scrubber.scrub(event);
 
-    // 2. Call user's callback if they provided one
-    if (userBeforeSend && config.preserveUserCallback !== false) {
-      return userBeforeSend(scrubbedEvent as SentryEvent, hint);
-    }
+      // 2. Call user's callback if they provided one
+      if (userBeforeSend && config.preserveUserCallback !== false) {
+        return userBeforeSend(scrubbedEvent as SentryEvent, hint);
+      }
 
-    return scrubbedEvent as SentryEvent;
+      return scrubbedEvent as SentryEvent;
+    },
+    // Wrap beforeSendTransaction for performance events
+    beforeSendTransaction: (
+      event: SentryEvent,
+      hint?: unknown
+    ): SentryEvent | null => {
+      // 1. Scrub the transaction event
+      const { data: scrubbedEvent } = scrubber.scrub(event);
+
+      // 2. Call user's callback if they provided one
+      if (userBeforeSendTransaction && config.preserveUserCallback !== false) {
+        return userBeforeSendTransaction(scrubbedEvent as SentryEvent, hint);
+      }
+
+      return scrubbedEvent as SentryEvent;
+    },
   };
 
-  // Wrap beforeSendTransaction for performance events
-  config.beforeSendTransaction = (
-    event: SentryEvent,
-    hint?: unknown
-  ): SentryEvent | null => {
-    // 1. Scrub the transaction event
-    const { data: scrubbedEvent } = scrubber.scrub(event);
-
-    // 2. Call user's callback if they provided one
-    if (userBeforeSendTransaction && config.preserveUserCallback !== false) {
-      return userBeforeSendTransaction(scrubbedEvent as SentryEvent, hint);
-    }
-
-    return scrubbedEvent as SentryEvent;
-  };
-
-  // Note: In production, the user would call Sentry.init(config) after this
-  // This function just wraps the callbacks in the config object
+  // Initialize Sentry with wrapped config
+  SentryModule.init(wrappedConfig);
 }
 
 /**
@@ -313,13 +310,12 @@ export function initSentryWithBlanket(
  *
  * @example
  * ```typescript
- * import { createSentryEventScrubber } from '@heroku/js-blanket/sentry';
- * import { Scrubber, HEROKU_FIELDS } from '@heroku/js-blanket';
+ * import { createSentryEventScrubber, HEROKU_FIELDS } from '@heroku/js-blanket';
  *
  * const scrubber = createSentryEventScrubber({
  *   fields: HEROKU_FIELDS,
  *   replacement: '[REDACTED]'
- * }, Scrubber);
+ * });
  *
  * const event = { user: { email: 'user@example.com' }, extra: { password: 'secret' } };
  * const scrubbed = scrubber(event);
@@ -327,17 +323,15 @@ export function initSentryWithBlanket(
  * ```
  *
  * @param config - Scrubbing configuration (fields, paths, patterns, replacement)
- * @param ScrubberClass - The Scrubber class to use for scrubbing
  * @returns Function that scrubs Sentry events immutably
  */
 export function createSentryEventScrubber(
   config: Pick<
     SentryBlanketConfig,
     'fields' | 'paths' | 'patterns' | 'replacement'
-  >,
-  ScrubberClass: typeof Scrubber
+  >
 ): (event: SentryEvent) => SentryEvent {
-  const scrubber = new ScrubberClass({
+  const scrubber = new Scrubber({
     fields: config.fields || [],
     paths: config.paths || [],
     patterns: config.patterns || [],
