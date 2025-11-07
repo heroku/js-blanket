@@ -2,7 +2,7 @@
 
 A framework-agnostic sensitive data scrubbing library for logging, exception
 handling, and monitoring services for NodeJS and JavaScript projects. JS Blanket
-has you coverd.
+has you covered.
 
 This project provides a core scrubbing engine with preset field lists for common
 PII patterns, and ready-to-use adapters for popular error monitoring and logging
