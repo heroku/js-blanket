@@ -1,4 +1,4 @@
-# Contributing Guide For Heroku MCP OAuth Provider Adapters
+# Contributing Guide For Heroku JS Blanket
 
 This page lists the operational governance model of this project, as well as the
 recommendations and requirements for how to best contribute to Heroku JS
