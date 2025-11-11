@@ -1,12 +1,12 @@
 # Heroku JS Blanket
 
 A framework-agnostic sensitive data scrubbing library for logging, exception
-handling, and monitoring services for NodeJS and JavaScript projects. JS Blanket
-has you covered.
+handling, and monitoring services for NodeJS and JavaScript projects. If you
+need to remove PII from structured data, JS Blanket has you covered.
 
 This project provides a core scrubbing engine with preset field lists for common
-PII patterns, and ready-to-use adapters for popular error monitoring and logging
-platforms.
+PII patterns, making it easy to integrate with any logging or error monitoring
+service.
 
 ## Features
 
@@ -25,13 +25,13 @@ platforms.
 
 ```bash
 # npm
-npm install @heroku/node-sentry-blanket
+npm install @heroku/js-blanket
 
 # pnpm
-pnpm add @heroku/node-sentry-blanket
+pnpm add @heroku/js-blanket
 
 # yarn
-yarn add @heroku/node-sentry-blanket
+yarn add @heroku/js-blanket
 ```
 
 ### Usage Examples
@@ -48,7 +48,7 @@ The `Scrubber` class provides flexible PII scrubbing with three modes:
 Scrubs values based on field names (exact match or regex):
 
 ```typescript
-import { Scrubber } from '@heroku/node-sentry-blanket';
+import { Scrubber } from '@heroku/js-blanket';
 
 const scrubber = new Scrubber({
   fields: ['password', 'apiToken', /.*_token$/i],
@@ -112,11 +112,7 @@ const result = scrubber.scrub(data);
 Use battle-tested preset field lists for common PII patterns:
 
 ```typescript
-import {
-  HEROKU_FIELDS,
-  GDPR_FIELDS,
-  PCI_FIELDS,
-} from '@heroku/node-sentry-blanket';
+import { HEROKU_FIELDS, GDPR_FIELDS, PCI_FIELDS } from '@heroku/js-blanket';
 
 // Heroku-specific sensitive fields
 const scrubber = new Scrubber({
@@ -187,7 +183,6 @@ Tests are located in `src/**/*.test.ts` and run against the compiled JavaScript
 in `dist/`. The test suite includes:
 
 - Unit tests for all public APIs
-- Integration tests with Sentry SDK
 - Type safety validation tests
 - Coverage reporting with c8 (HTML and text-summary)
 
@@ -218,7 +213,6 @@ under 200 lines per commit, and ensure tests and type checks pass. See
 
 For more detailed examples and use cases:
 
-- [Sentry Integration Examples](docs/examples/sentry-integration.md)
 - [Logging Integration Examples](docs/examples/logging-integration.md)
 - [Migration Guides](docs/MIGRATION.md)
 - [Project Status](docs/PROJECT-STATUS.md)

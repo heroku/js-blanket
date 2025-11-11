@@ -2,10 +2,6 @@
  * Heroku-specific sensitive field patterns
  *
  * Consolidated list of field names and patterns that contain sensitive data in Heroku applications.
- * Sourced from:
- * - Ruby `sentry-blanket` gem
- * - Heroku Dashboard (frontend)
- * - Herokudata-frontend
  *
  * Use this preset to ensure consistent PII handling across Heroku services.
  *

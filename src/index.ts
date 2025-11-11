@@ -6,13 +6,3 @@ export { PII_PATTERNS } from './core/patterns.js';
 
 // Logging adapter
 export { createRedactor } from './adapters/logging/generic.js';
-
-// Exception handler adapters
-export {
-  initSentryWithBlanket,
-  createSentryEventScrubber,
-} from './adapters/exception-handlers/sentry.js';
-export type {
-  SentryEvent,
-  SentryBlanketConfig,
-} from './adapters/exception-handlers/sentry.js';

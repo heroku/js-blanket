@@ -9,20 +9,20 @@ import {
 } from './index.js';
 
 describe('js-blanket', () => {
-  it('exports Scrubber class', () => {
+  it('creates and uses Scrubber instances for field-based scrubbing', () => {
     expect(Scrubber).to.be.a('function');
     const scrubber = new Scrubber({ fields: ['password'] });
     expect(scrubber).to.be.instanceOf(Scrubber);
   });
 
-  it('exports createRedactor function', () => {
+  it('creates redactor instances that scrub sensitive data', () => {
     expect(createRedactor).to.be.a('function');
     const redactor = createRedactor({ fields: ['password'] });
     const result = redactor.scrub({ password: 'secret' });
     expect(result.data.password).to.equal('[SCRUBBED]');
   });
 
-  it('exports HEROKU_FIELDS preset', () => {
+  it('provides HEROKU_FIELDS preset with standard Heroku sensitive fields', () => {
     expect(HEROKU_FIELDS).to.be.an('array');
     expect(HEROKU_FIELDS).to.include('password');
     // Check for api_key pattern (can be string or regex)
@@ -34,7 +34,7 @@ describe('js-blanket', () => {
     expect(hasApiKey).to.be.true;
   });
 
-  it('exports PII_PATTERNS preset', () => {
+  it('provides PII_PATTERNS preset with common PII regex patterns', () => {
     expect(PII_PATTERNS).to.be.an('array');
     expect(PII_PATTERNS.length).to.be.greaterThan(0);
   });

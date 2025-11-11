@@ -1,9 +1,9 @@
 {
-  "name": "@heroku/node-sentry-blanket",
+  "name": "@heroku/js-blanket",
   "version": "0.0.0",
-  "description": "Framework-agnostic sensitive data scrubbing for error monitoring services like Sentry and Rollbar",
+  "description": "Framework-agnostic sensitive data scrubbing library for error monitoring and logging",
   "type": "module",
-  "packageManager": "pnpm@10.20.0",
+  "packageManager": "pnpm@10.21.0",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -36,18 +36,6 @@
   "dependencies": {
     "tslib": "^2.8.1"
   },
-  "peerDependencies": {
-    "@sentry/node": ">=10.0.0",
-    "@sentry/browser": ">=10.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@sentry/node": {
-      "optional": true
-    },
-    "@sentry/browser": {
-      "optional": true
-    }
-  },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/chai": "^5.2.3",
@@ -72,18 +60,18 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/heroku/node-sentry-blanket.git"
+    "url": "git+https://github.com/heroku/js-blanket.git"
   },
   "bugs": {
     "type": "git",
-    "url": "https://github.com/heroku/node-sentry-blanket/issues"
+    "url": "https://github.com/heroku/js-blanket/issues"
   },
   "keywords": [
-    "sentry",
-    "rollbar",
-    "error-monitoring",
     "pii",
     "scrubbing",
-    "security"
+    "security",
+    "data-sanitization",
+    "error-monitoring",
+    "logging"
   ]
 }
