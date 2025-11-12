@@ -1,7 +1,7 @@
 # Generic Logging Adapter - Integration Examples
 
-This guide provides comprehensive examples for integrating `@heroku/js-blanket`
-with popular logging libraries.
+Examples for integrating `@heroku/js-blanket` with Winston, Pino, Bunyan, and
+custom loggers.
 
 ## Table of Contents
 
@@ -15,8 +15,8 @@ with popular logging libraries.
 
 ## Winston Integration
 
-[Winston](https://github.com/winstonjs/winston) is a versatile logging library
-with support for multiple transports.
+[Winston](https://github.com/winstonjs/winston) handles multiple transports and
+has powerful formatting. The scrubber slots in as a custom format.
 
 ### Basic Integration
 
@@ -151,7 +151,8 @@ requestLogger.info('User authenticated', {
 
 ## Pino Integration
 
-[Pino](https://github.com/pinojs/pino) is a fast, low-overhead logging library.
+[Pino](https://github.com/pinojs/pino) prioritizes performance. Use the
+`hooks.logMethod` pattern to scrub without adding much overhead.
 
 ### Basic Integration
 
@@ -295,8 +296,8 @@ childLogger.info({
 
 ## Bunyan Integration
 
-[Bunyan](https://github.com/trentm/node-bunyan) is a JSON logging library for
-Node.js.
+[Bunyan](https://github.com/trentm/node-bunyan) outputs structured JSON logs.
+Use a custom stream to scrub records before they're written.
 
 ### Basic Integration
 
@@ -568,99 +569,11 @@ logger.info('User authenticated', {
 
 ---
 
-## oauth-provider-adapters Migration Example
-
-If you're migrating from `oauth-provider-adapters-for-mcp`, this is a drop-in
-replacement for the `redaction.ts` utility.
-
-### Before (oauth-provider-adapters)
-
-```typescript
-// Old implementation in oauth-provider-adapters-for-mcp
-import { redactSensitiveData } from './utils/redaction';
-
-const logger = DefaultLogger.child();
-const sensitiveData = {
-  client_id: 'my-client',
-  client_secret: 'secret123',
-  refresh_token: 'refresh123',
-};
-
-const redacted = redactSensitiveData(sensitiveData, [
-  'client_secret',
-  'refresh_token',
-  'access_token',
-]);
-
-logger.info('OAuth data:', redacted);
-```
-
-### After (@heroku/js-blanket)
-
-```typescript
-// New implementation with @heroku/js-blanket
-import { createRedactor } from '@heroku/js-blanket';
-import { DefaultLogger } from 'your-logger';
-
-const redactor = createRedactor({
-  fields: ['client_secret', 'refresh_token', 'access_token'],
-});
-
-const logger = DefaultLogger.child();
-const sensitiveData = {
-  client_id: 'my-client',
-  client_secret: 'secret123',
-  refresh_token: 'refresh123',
-};
-
-const { data: redacted } = redactor.scrub(sensitiveData);
-
-logger.info('OAuth data:', redacted);
-```
-
-### Migration Benefits
-
-1. **More powerful scrubbing**: Field-based, path-based, and pattern-based modes
-2. **Better performance**: 194k+ logs/sec average throughput
-3. **Type safety**: Full TypeScript support with generic type preservation
-4. **Presets available**: `HEROKU_FIELDS`, `GDPR_FIELDS`, `PCI_FIELDS`
-5. **Metadata tracking**: Know what was scrubbed with `scrubbedPaths`
-
-### Complete Migration Example
-
-```typescript
-import { createRedactor, HEROKU_FIELDS } from '@heroku/js-blanket';
-
-// Create a global redactor instance
-const redactor = createRedactor({
-  fields: [...HEROKU_FIELDS, 'client_secret', 'refresh_token', 'access_token'],
-  paths: ['oauth.credentials.secret'],
-});
-
-// Replace all redactSensitiveData() calls
-function redactSensitiveData<T>(data: T): T {
-  const result = redactor.scrub(data);
-  return result.data;
-}
-
-// Usage remains the same
-const scrubbed = redactSensitiveData({
-  client_id: 'my-client',
-  client_secret: 'secret123',
-  oauth: {
-    credentials: {
-      access_token: 'access123',
-      secret: 'hidden',
-    },
-  },
-});
-```
-
----
-
 ## Best Practices
 
 ### 1. Create Redactor Once
+
+Create the redactor at module load, not per-log.
 
 ```typescript
 // ✅ Good: Create redactor once at module level
@@ -673,13 +586,15 @@ function logUserAction(data: Record<string, unknown>) {
 
 // ❌ Bad: Creating redactor on every log
 function logUserAction(data: Record<string, unknown>) {
-  const redactor = createRedactor({ fields: HEROKU_FIELDS }); // Inefficient!
+  const redactor = createRedactor({ fields: HEROKU_FIELDS }); // Wasteful!
   const { data: scrubbed } = redactor.scrub(data);
   logger.info(scrubbed);
 }
 ```
 
 ### 2. Use Presets
+
+The presets are curated lists. Use them unless you have specific requirements:
 
 ```typescript
 // ✅ Good: Use presets for common scenarios
@@ -689,13 +604,15 @@ const redactor = createRedactor({
   fields: [...HEROKU_FIELDS, ...GDPR_FIELDS, ...PCI_FIELDS],
 });
 
-// ❌ Okay but verbose: Manually listing all fields
+// ❌ Tedious: Manually listing all fields
 const redactor = createRedactor({
   fields: ['password', 'apiToken', 'email', 'phone', 'cvv', ...],
 });
 ```
 
 ### 3. Combine Scrubbing Modes
+
+Layer different strategies for defense in depth:
 
 ```typescript
 // ✅ Good: Use multiple modes for comprehensive scrubbing
@@ -707,6 +624,8 @@ const redactor = createRedactor({
 ```
 
 ### 4. Monitor Scrubbing Activity
+
+Track what's being redacted, especially during initial deployment:
 
 ```typescript
 // ✅ Good: Track what was scrubbed for debugging
@@ -723,10 +642,11 @@ logger.info(result.data);
 
 ## Performance Considerations
 
-- **Overhead**: <0.02ms p95 for typical log entries
-- **Throughput**: 194k+ logs/sec average
-- **Memory**: Scrubbing is immutable (creates new objects)
-- **Caching**: Redactor instances cache path lookups for O(1) performance
+- **Overhead**: <0.02ms p95 for typical log entries (measured on standard
+  payloads)
+- **Throughput**: 194k+ logs/sec average (single-threaded)
+- **Memory**: Scrubbing is immutable—creates new objects rather than mutating
+- **Caching**: Redactor instances cache path lookups for O(1) field matching
 
 ## Additional Resources
 
