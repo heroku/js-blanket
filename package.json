@@ -1,9 +1,9 @@
 {
-  "name": "@heroku/node-sentry-blanket",
+  "name": "@heroku/js-blanket",
   "version": "0.0.0",
-  "description": "Framework-agnostic sensitive data scrubbing for error monitoring services like Sentry and Rollbar",
+  "description": "Framework-agnostic sensitive data scrubbing library for error monitoring and logging",
   "type": "module",
-  "packageManager": "pnpm@10.20.0",
+  "packageManager": "pnpm@10.21.0",
   "engines": {
     "node": ">=20.0.0"
   },
@@ -21,11 +21,11 @@
     "build:cjs": "rm -rf dist/cjs && tsc -p tsconfig.cjs.json && mkdir -p dist/cjs && echo '{\"type\": \"commonjs\"}' > dist/cjs/package.json",
     "build:esm": "rm -rf dist/esm && tsc -p tsconfig.esm.json",
     "build": "pnpm run build:cjs && pnpm run build:esm",
-    "test": "MCP_OAUTH_LOG_LEVEL=silent LOG_LEVEL=silent c8 mocha --require ./scripts/test-setup.mjs --forbid-only \"dist/esm/**/*.test.js\"",
+    "test": "c8 mocha --require ./scripts/test-setup.mjs --forbid-only \"dist/esm/**/*.test.js\"",
     "prepare": "husky",
     "lint": "eslint \"src/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix",
-    "prettier": "prettier . --write --config ./.prettier.mjs",
+    "prettier": "prettier . --write",
     "format": "pnpm run prettier && pnpm run lint:fix",
     "pretest": "pnpm run build:cjs && pnpm run build:esm && pnpm run type-check",
     "type-check": "tsc --noEmit -p tsconfig.json",
@@ -48,7 +48,7 @@
     "eslint": "^9.39.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.6",
-    "mocha": "^11.7.4",
+    "mocha": "^11.7.5",
     "prettier": "^3.6.2",
     "typescript": "^5.9.3"
   },
@@ -60,18 +60,18 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/heroku/node-sentry-blanket.git"
+    "url": "git+https://github.com/heroku/js-blanket.git"
   },
   "bugs": {
     "type": "git",
-    "url": "https://github.com/heroku/node-sentry-blanket/issues"
+    "url": "https://github.com/heroku/js-blanket/issues"
   },
   "keywords": [
-    "sentry",
-    "rollbar",
-    "error-monitoring",
     "pii",
     "scrubbing",
-    "security"
+    "security",
+    "data-sanitization",
+    "error-monitoring",
+    "logging"
   ]
 }

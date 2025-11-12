@@ -1,9 +1,3 @@
-// Ensure logs are silenced during test runs
-if (!process.env.MCP_OAUTH_LOG_LEVEL && !process.env.LOG_LEVEL) {
-  process.env.MCP_OAUTH_LOG_LEVEL = 'silent';
-  process.env.LOG_LEVEL = 'silent';
-}
-
 // Suppress structured logger output objects while preserving Mocha output
 const originalLog = console.log.bind(console);
 const originalError = console.error.bind(console);

@@ -5,7 +5,8 @@
     "moduleResolution": "NodeNext",
     "outDir": "./dist/esm",
     "target": "ES2022",
-    "declaration": true
+    "declaration": true,
+    "tsBuildInfoFile": "./dist/esm/.tsbuildinfo"
   },
   "include": ["src/**/*"]
 }
