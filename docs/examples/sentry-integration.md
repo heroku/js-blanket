@@ -116,3 +116,10 @@ Sentry.init({
 - **Initialize early**: Set up Sentry before your app code runs to catch early
   errors
 - **Create scrubber once**: Reuse the same instance (operations are immutable)
+
+## Additional Resources
+
+- [Logging Examples](./logging-integration.md)
+- [Core Scrubber API](../../README.md#core-scrubber)
+- [Preset Field Lists](../../README.md#preset-field-lists)
+-
