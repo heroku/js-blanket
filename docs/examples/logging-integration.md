@@ -16,7 +16,7 @@ logger's documentation.
 
 ## Winston Integration
 
-[Winston](https://github.com/winstonjs/winston): Use a custom format to scrub
+[Winston](https://github.com/winstonjs/winston)—Use a custom format to scrub
 sensitive data:
 
 ```typescript
@@ -65,7 +65,7 @@ serializers, see
 
 ## Pino Integration
 
-[Pino](https://github.com/pinojs/pino): use `hooks.logMethod` for high
+[Pino](https://github.com/pinojs/pino)—use `hooks.logMethod` for high
 performance scrubbing:
 
 ```typescript
@@ -110,7 +110,7 @@ logger.info({
 
 ## Bunyan Integration
 
-[Bunyan](https://github.com/trentm/node-bunyan): use a custom stream to scrub
+[Bunyan](https://github.com/trentm/node-bunyan)—use a custom stream to scrub
 records before writing:
 
 ```typescript
@@ -253,12 +253,6 @@ const redactor = createRedactor({
   patterns: [/\b\d{3}-\d{2}-\d{4}\b/g], // Scrub SSN patterns in text
 });
 ```
-
-### Performance
-
-- **Overhead**: <0.02ms p95 for typical log entries
-- **Throughput**: 194k+ logs/sec (single-threaded)
-- **Memory**: Immutable operations create new objects
 
 ---
 
