@@ -38,10 +38,8 @@ export const HEROKU_FIELDS = [
   'password_confirmation',
   /client[-_]?secret/i, // Matches client_secret, client-secret, clientsecret
 
-  // Tokens & Codes
+  // Tokens
   'token',
-  'code',
-  'state',
   'bouncer.token',
   'bouncer.refresh_token',
 
