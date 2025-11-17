@@ -19,7 +19,7 @@ For Sentry installation, see
 
 ## Basic Integration
 
-Create a scrubber and use it in `beforeSend`—this covers most use cases:
+Create a scrubber and use it in `beforeSend`.
 
 ```javascript
 import * as Sentry from '@sentry/browser'; // or @sentry/node, @sentry/react, etc.
