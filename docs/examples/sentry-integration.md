@@ -80,37 +80,6 @@ Sentry.init({
 - Use patterns when PII might appear in log messages, error messages, or other
   string content
 
-## Scrubbing Breadcrumbs
-
-Breadcrumbs capture user actions and network requests. Scrub them separately if
-they contain sensitive data:
-
-```javascript
-import * as Sentry from '@sentry/browser'; // or @sentry/node, @sentry/react, etc.
-import { Scrubber, HEROKU_FIELDS } from '@heroku/js-blanket';
-
-const scrubber = new Scrubber({
-  fields: [...HEROKU_FIELDS],
-  patterns: [/Bearer\s+[\w-]+/gi], // Auth tokens
-});
-
-Sentry.init({
-  ...,
-
-  beforeSend(event, hint) {
-    // Scrub breadcrumbs if present
-    if (event.breadcrumbs) {
-      event.breadcrumbs = event.breadcrumbs.map(
-        (breadcrumb) => scrubber.scrub(breadcrumb).data
-      );
-    }
-
-    // Scrub the rest of the event
-    return scrubber.scrub(event).data;
-  },
-});
-```
-
 ### Notes
 
 - **Initialize early**: Set up Sentry before your app code runs to catch early
