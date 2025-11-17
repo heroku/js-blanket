@@ -1,7 +1,8 @@
-# Generic Logging Adapter - Integration Examples
+# Logging Integration with JS Blanket
 
-This guide provides comprehensive examples for integrating `@heroku/js-blanket`
-with popular logging libraries.
+Quick reference for integrating `@heroku/js-blanket` with popular logging
+libraries. For logger-specific configuration and troubleshooting, see each
+logger's documentation.
 
 ## Table of Contents
 
@@ -9,22 +10,20 @@ with popular logging libraries.
 - [Pino Integration](#pino-integration)
 - [Bunyan Integration](#bunyan-integration)
 - [Custom Logger Integration](#custom-logger-integration)
-- [oauth-provider-adapters Migration](#oauth-provider-adapters-migration)
+- [Best Practices](#best-practices)
 
 ---
 
 ## Winston Integration
 
-[Winston](https://github.com/winstonjs/winston) is a versatile logging library
-with support for multiple transports.
-
-### Basic Integration
+[Winston](https://github.com/winstonjs/winston)—Use a custom format to scrub
+sensitive data:
 
 ```typescript
 import winston from 'winston';
 import { createRedactor, HEROKU_FIELDS } from '@heroku/js-blanket';
 
-// Create the redactor
+// Create the redactor once at module level
 const redactor = createRedactor({
   fields: HEROKU_FIELDS,
   paths: ['request.headers.authorization'],
@@ -32,8 +31,7 @@ const redactor = createRedactor({
 
 // Custom format that scrubs sensitive data
 const scrubFormat = winston.format((info) => {
-  const scrubbed = redactor.scrub(info);
-  return scrubbed.data;
+  return redactor.scrub(info).data;
 });
 
 // Create Winston logger with scrubbing
@@ -54,131 +52,34 @@ const logger = winston.createLogger({
 logger.info('User login', {
   user: 'john',
   email: 'john@example.com',
-  password: 'secret123', // Will be scrubbed
-  apiToken: 'token123', // Will be scrubbed
+  password: 'secret123', // Scrubbed
+  apiToken: 'token123', // Scrubbed
 });
 ```
 
-### Advanced Winston Integration with Metadata
-
-```typescript
-import winston from 'winston';
-import { createRedactor, HEROKU_FIELDS, GDPR_FIELDS } from '@heroku/js-blanket';
-
-const redactor = createRedactor({
-  fields: [...HEROKU_FIELDS, ...GDPR_FIELDS],
-});
-
-// Helper function to scrub metadata
-function scrubMetadata(info: winston.Logform.TransformableInfo) {
-  // Extract non-symbol properties (Winston uses Symbols for internal data)
-  const data: Record<string, unknown> = {};
-  for (const key in info) {
-    if (typeof key === 'string' && !key.startsWith('Symbol(')) {
-      data[key] = info[key];
-    }
-  }
-
-  const scrubbed = redactor.scrub(data);
-
-  // Replace info properties with scrubbed versions
-  Object.assign(info, scrubbed.data);
-  return info;
-}
-
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    winston.format((info) => scrubMetadata(info))(),
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [new winston.transports.Console()],
-});
-
-// Usage with rich metadata
-logger.info('API request completed', {
-  request: {
-    method: 'POST',
-    url: '/api/users',
-    headers: {
-      authorization: 'Bearer secret', // Scrubbed
-      'user-agent': 'Mozilla/5.0',
-    },
-  },
-  user: {
-    id: 'user-123',
-    email: 'user@example.com', // Scrubbed (GDPR_FIELDS)
-  },
-  duration: 145,
-});
-```
-
-### Winston with Child Loggers
-
-```typescript
-import winston from 'winston';
-import { createRedactor, HEROKU_FIELDS } from '@heroku/js-blanket';
-
-const redactor = createRedactor({ fields: HEROKU_FIELDS });
-
-const scrubFormat = winston.format((info) => {
-  const scrubbed = redactor.scrub(info);
-  return scrubbed.data;
-});
-
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.combine(
-    scrubFormat(),
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  transports: [new winston.transports.Console()],
-});
-
-// Create child logger with default metadata
-const requestLogger = logger.child({ requestId: 'req-123' });
-
-// All logs from child logger are scrubbed
-requestLogger.info('User authenticated', {
-  userId: 'user-456',
-  password: 'secret', // Scrubbed
-});
-```
+**Advanced patterns:** For metadata scrubbing, child loggers, or custom
+serializers, see
+[Winston's format documentation](https://github.com/winstonjs/winston#formats).
 
 ---
 
 ## Pino Integration
 
-[Pino](https://github.com/pinojs/pino) is a fast, low-overhead logging library.
-
-### Basic Integration
+[Pino](https://github.com/pinojs/pino)—use `hooks.logMethod` for high
+performance scrubbing:
 
 ```typescript
 import pino from 'pino';
 import { createRedactor, HEROKU_FIELDS } from '@heroku/js-blanket';
 
+// Create the redactor once at module level
 const redactor = createRedactor({
   fields: HEROKU_FIELDS,
 });
 
-// Custom serializer that scrubs sensitive data
-const scrubSerializer = (obj: unknown) => {
-  const scrubbed = redactor.scrub(obj);
-  return scrubbed.data;
-};
-
 // Create Pino logger with scrubbing
 const logger = pino({
   level: 'info',
-  serializers: {
-    // Scrub the entire log object
-    log: scrubSerializer,
-    // Or scrub specific fields
-    user: scrubSerializer,
-    request: scrubSerializer,
-  },
   hooks: {
     // Scrub all log objects before they're written
     logMethod(args, method) {
@@ -196,114 +97,27 @@ const logger = pino({
 // Usage
 logger.info({
   user: 'john',
-  password: 'secret123', // Will be scrubbed
-  apiToken: 'token123', // Will be scrubbed
+  password: 'secret123', // Scrubbed
+  apiToken: 'token123', // Scrubbed
   msg: 'User login',
 });
 ```
 
-### Advanced Pino Integration with Redaction
-
-```typescript
-import pino from 'pino';
-import { createRedactor, HEROKU_FIELDS, GDPR_FIELDS } from '@heroku/js-blanket';
-
-const redactor = createRedactor({
-  fields: [...HEROKU_FIELDS, ...GDPR_FIELDS],
-  paths: ['request.headers.authorization', 'request.body.password'],
-});
-
-// Create Pino logger with comprehensive scrubbing
-const logger = pino({
-  level: 'info',
-  hooks: {
-    logMethod(args, method) {
-      if (args.length >= 1) {
-        const [first, ...rest] = args;
-
-        // Handle both obj-msg and msg-only formats
-        if (typeof first === 'object' && first !== null) {
-          const scrubbed = redactor.scrub(first);
-          method.apply(this, [scrubbed.data, ...rest]);
-        } else {
-          method.apply(this, args);
-        }
-      } else {
-        method.apply(this, args);
-      }
-    },
-  },
-});
-
-// Usage with nested data
-logger.info({
-  request: {
-    method: 'POST',
-    url: '/api/login',
-    headers: {
-      authorization: 'Bearer token123', // Scrubbed by path
-      'content-type': 'application/json',
-    },
-    body: {
-      username: 'john',
-      password: 'secret123', // Scrubbed by path
-    },
-  },
-  user: {
-    id: 'user-123',
-    email: 'john@example.com', // Scrubbed by GDPR_FIELDS
-  },
-  msg: 'Login attempt',
-});
-```
-
-### Pino with Child Loggers and Bindings
-
-```typescript
-import pino from 'pino';
-import { createRedactor, HEROKU_FIELDS } from '@heroku/js-blanket';
-
-const redactor = createRedactor({ fields: HEROKU_FIELDS });
-
-const logger = pino({
-  hooks: {
-    logMethod(args, method) {
-      if (args.length >= 1 && typeof args[0] === 'object') {
-        const scrubbed = redactor.scrub(args[0]);
-        method.apply(this, [scrubbed.data, ...args.slice(1)]);
-      } else {
-        method.apply(this, args);
-      }
-    },
-  },
-});
-
-// Create child logger with bindings
-const childLogger = logger.child({
-  requestId: 'req-456',
-  userId: 'user-789',
-});
-
-// Bindings are also scrubbed
-childLogger.info({
-  password: 'secret', // Scrubbed
-  action: 'update-profile',
-});
-```
+**Advanced patterns:** For child loggers, bindings, or custom serializers, see
+[Pino's hooks documentation](https://github.com/pinojs/pino/blob/master/docs/api.md#hooks).
 
 ---
 
 ## Bunyan Integration
 
-[Bunyan](https://github.com/trentm/node-bunyan) is a JSON logging library for
-Node.js.
-
-### Basic Integration
+[Bunyan](https://github.com/trentm/node-bunyan)—use a custom stream to scrub
+records before writing:
 
 ```typescript
 import bunyan from 'bunyan';
 import { createRedactor, HEROKU_FIELDS } from '@heroku/js-blanket';
 
+// Create the redactor once at module level
 const redactor = createRedactor({
   fields: HEROKU_FIELDS,
 });
@@ -325,111 +139,38 @@ const logger = bunyan.createLogger({
       stream: new ScrubStream(),
     },
   ],
-  serializers: bunyan.stdSerializers, // Include standard serializers
+  serializers: bunyan.stdSerializers,
 });
 
 // Usage
 logger.info(
   {
     user: 'john',
-    password: 'secret123', // Will be scrubbed
-    apiToken: 'token123', // Will be scrubbed
+    password: 'secret123', // Scrubbed
+    apiToken: 'token123', // Scrubbed
   },
   'User login'
 );
 ```
 
-### Advanced Bunyan Integration
-
-```typescript
-import bunyan from 'bunyan';
-import {
-  createRedactor,
-  HEROKU_FIELDS,
-  GDPR_FIELDS,
-  PCI_FIELDS,
-} from '@heroku/js-blanket';
-
-const redactor = createRedactor({
-  fields: [...HEROKU_FIELDS, ...GDPR_FIELDS, ...PCI_FIELDS],
-});
-
-// Custom serializers that scrub sensitive data
-const scrubSerializers = {
-  ...bunyan.stdSerializers,
-  // Scrub request data
-  req: (req: Record<string, unknown>) => {
-    const serialized = bunyan.stdSerializers.req(req);
-    const scrubbed = redactor.scrub(serialized);
-    return scrubbed.data;
-  },
-  // Scrub response data
-  res: (res: Record<string, unknown>) => {
-    const serialized = bunyan.stdSerializers.res(res);
-    const scrubbed = redactor.scrub(serialized);
-    return scrubbed.data;
-  },
-  // Scrub error data
-  err: (err: Error) => {
-    const serialized = bunyan.stdSerializers.err(err);
-    const scrubbed = redactor.scrub(serialized);
-    return scrubbed.data;
-  },
-  // Custom user serializer
-  user: (user: Record<string, unknown>) => {
-    const scrubbed = redactor.scrub(user);
-    return scrubbed.data;
-  },
-};
-
-class ScrubStream {
-  write(rec: bunyan.LogRecord) {
-    const scrubbed = redactor.scrub(rec);
-    process.stdout.write(JSON.stringify(scrubbed.data) + '\n');
-  }
-}
-
-const logger = bunyan.createLogger({
-  name: 'myapp',
-  streams: [
-    {
-      level: 'info',
-      stream: new ScrubStream(),
-    },
-  ],
-  serializers: scrubSerializers,
-});
-
-// Usage with serializers
-logger.info(
-  {
-    req: {
-      method: 'POST',
-      url: '/api/users',
-      headers: { authorization: 'Bearer token' },
-    },
-    user: { id: 'user-123', email: 'user@example.com', password: 'secret' },
-  },
-  'API request'
-);
-```
+**Advanced patterns:** For custom serializers or multiple streams, see
+[Bunyan's serializers documentation](https://github.com/trentm/node-bunyan#serializers).
 
 ---
 
 ## Custom Logger Integration
 
-### Simple Custom Logger
+For custom loggers, scrub data before writing:
 
 ```typescript
 import { createRedactor, HEROKU_FIELDS } from '@heroku/js-blanket';
 
+// Create the redactor once at module level
 const redactor = createRedactor({
   fields: HEROKU_FIELDS,
 });
 
 class SimpleLogger {
-  private redactor = redactor;
-
   info(message: string, data?: Record<string, unknown>) {
     this.log('INFO', message, data);
   }
@@ -443,16 +184,14 @@ class SimpleLogger {
   }
 
   private log(level: string, message: string, data?: Record<string, unknown>) {
-    const timestamp = new Date().toISOString();
-
     const logEntry = {
-      timestamp,
+      timestamp: new Date().toISOString(),
       level,
       message,
       ...data,
     };
 
-    const scrubbed = this.redactor.scrub(logEntry);
+    const scrubbed = redactor.scrub(logEntry);
     console.log(JSON.stringify(scrubbed.data));
   }
 }
@@ -466,204 +205,16 @@ logger.info('User login', {
 });
 ```
 
-### Advanced Custom Logger with Formatting
-
-```typescript
-import { createRedactor, HEROKU_FIELDS, GDPR_FIELDS } from '@heroku/js-blanket';
-
-interface LoggerConfig {
-  level: 'debug' | 'info' | 'warn' | 'error';
-  format: 'json' | 'pretty';
-  scrubConfig: Parameters<typeof createRedactor>[0];
-}
-
-class AdvancedLogger {
-  private config: LoggerConfig;
-  private redactor: ReturnType<typeof createRedactor>;
-
-  constructor(config: LoggerConfig) {
-    this.config = config;
-    this.redactor = createRedactor(config.scrubConfig);
-  }
-
-  debug(message: string, meta?: Record<string, unknown>) {
-    if (this.shouldLog('debug')) {
-      this.log('DEBUG', message, meta);
-    }
-  }
-
-  info(message: string, meta?: Record<string, unknown>) {
-    if (this.shouldLog('info')) {
-      this.log('INFO', message, meta);
-    }
-  }
-
-  warn(message: string, meta?: Record<string, unknown>) {
-    if (this.shouldLog('warn')) {
-      this.log('WARN', message, meta);
-    }
-  }
-
-  error(message: string, meta?: Record<string, unknown>) {
-    if (this.shouldLog('error')) {
-      this.log('ERROR', message, meta);
-    }
-  }
-
-  private shouldLog(level: string): boolean {
-    const levels = ['debug', 'info', 'warn', 'error'];
-    return levels.indexOf(level) >= levels.indexOf(this.config.level);
-  }
-
-  private log(level: string, message: string, meta?: Record<string, unknown>) {
-    const logEntry = {
-      timestamp: new Date().toISOString(),
-      level,
-      message,
-      ...meta,
-    };
-
-    const scrubbed = this.redactor.scrub(logEntry);
-
-    if (this.config.format === 'json') {
-      console.log(JSON.stringify(scrubbed.data));
-    } else {
-      this.prettyPrint(scrubbed.data);
-    }
-  }
-
-  private prettyPrint(data: Record<string, unknown>) {
-    const { timestamp, level, message, ...rest } = data;
-    console.log(`[${timestamp}] ${level}: ${message}`);
-    if (Object.keys(rest).length > 0) {
-      console.log('  ', JSON.stringify(rest, null, 2));
-    }
-  }
-}
-
-// Usage
-const logger = new AdvancedLogger({
-  level: 'info',
-  format: 'pretty',
-  scrubConfig: {
-    fields: [...HEROKU_FIELDS, ...GDPR_FIELDS],
-    paths: ['request.headers.authorization'],
-  },
-});
-
-logger.info('User authenticated', {
-  user: {
-    id: 'user-123',
-    email: 'john@example.com', // Scrubbed by GDPR_FIELDS
-    password: 'secret', // Scrubbed by HEROKU_FIELDS
-  },
-  request: {
-    method: 'POST',
-    headers: {
-      authorization: 'Bearer token', // Scrubbed by path
-    },
-  },
-});
-```
-
----
-
-## oauth-provider-adapters Migration Example
-
-If you're migrating from `oauth-provider-adapters-for-mcp`, this is a drop-in
-replacement for the `redaction.ts` utility.
-
-### Before (oauth-provider-adapters)
-
-```typescript
-// Old implementation in oauth-provider-adapters-for-mcp
-import { redactSensitiveData } from './utils/redaction';
-
-const logger = DefaultLogger.child();
-const sensitiveData = {
-  client_id: 'my-client',
-  client_secret: 'secret123',
-  refresh_token: 'refresh123',
-};
-
-const redacted = redactSensitiveData(sensitiveData, [
-  'client_secret',
-  'refresh_token',
-  'access_token',
-]);
-
-logger.info('OAuth data:', redacted);
-```
-
-### After (@heroku/js-blanket)
-
-```typescript
-// New implementation with @heroku/js-blanket
-import { createRedactor } from '@heroku/js-blanket';
-import { DefaultLogger } from 'your-logger';
-
-const redactor = createRedactor({
-  fields: ['client_secret', 'refresh_token', 'access_token'],
-});
-
-const logger = DefaultLogger.child();
-const sensitiveData = {
-  client_id: 'my-client',
-  client_secret: 'secret123',
-  refresh_token: 'refresh123',
-};
-
-const { data: redacted } = redactor.scrub(sensitiveData);
-
-logger.info('OAuth data:', redacted);
-```
-
-### Migration Benefits
-
-1. **More powerful scrubbing**: Field-based, path-based, and pattern-based modes
-2. **Better performance**: 194k+ logs/sec average throughput
-3. **Type safety**: Full TypeScript support with generic type preservation
-4. **Presets available**: `HEROKU_FIELDS`, `GDPR_FIELDS`, `PCI_FIELDS`
-5. **Metadata tracking**: Know what was scrubbed with `scrubbedPaths`
-
-### Complete Migration Example
-
-```typescript
-import { createRedactor, HEROKU_FIELDS } from '@heroku/js-blanket';
-
-// Create a global redactor instance
-const redactor = createRedactor({
-  fields: [...HEROKU_FIELDS, 'client_secret', 'refresh_token', 'access_token'],
-  paths: ['oauth.credentials.secret'],
-});
-
-// Replace all redactSensitiveData() calls
-function redactSensitiveData<T>(data: T): T {
-  const result = redactor.scrub(data);
-  return result.data;
-}
-
-// Usage remains the same
-const scrubbed = redactSensitiveData({
-  client_id: 'my-client',
-  client_secret: 'secret123',
-  oauth: {
-    credentials: {
-      access_token: 'access123',
-      secret: 'hidden',
-    },
-  },
-});
-```
-
 ---
 
 ## Best Practices
 
-### 1. Create Redactor Once
+### Create Redactor Once
+
+Create the redactor at module load, not per log:
 
 ```typescript
-// ✅ Good: Create redactor once at module level
+// ✅ Good: Create once at module level
 const redactor = createRedactor({ fields: HEROKU_FIELDS });
 
 function logUserAction(data: Record<string, unknown>) {
@@ -671,34 +222,31 @@ function logUserAction(data: Record<string, unknown>) {
   logger.info(scrubbed);
 }
 
-// ❌ Bad: Creating redactor on every log
+// ❌ Bad: Creating on every log
 function logUserAction(data: Record<string, unknown>) {
-  const redactor = createRedactor({ fields: HEROKU_FIELDS }); // Inefficient!
+  const redactor = createRedactor({ fields: HEROKU_FIELDS }); // Wasteful!
   const { data: scrubbed } = redactor.scrub(data);
   logger.info(scrubbed);
 }
 ```
 
-### 2. Use Presets
+### Use Presets
+
+Use preset field lists for common scenarios:
 
 ```typescript
-// ✅ Good: Use presets for common scenarios
 import { HEROKU_FIELDS, GDPR_FIELDS, PCI_FIELDS } from '@heroku/js-blanket';
 
 const redactor = createRedactor({
   fields: [...HEROKU_FIELDS, ...GDPR_FIELDS, ...PCI_FIELDS],
 });
-
-// ❌ Okay but verbose: Manually listing all fields
-const redactor = createRedactor({
-  fields: ['password', 'apiToken', 'email', 'phone', 'cvv', ...],
-});
 ```
 
-### 3. Combine Scrubbing Modes
+### Combine Scrubbing Modes
+
+Layer different strategies for comprehensive coverage:
 
 ```typescript
-// ✅ Good: Use multiple modes for comprehensive scrubbing
 const redactor = createRedactor({
   fields: HEROKU_FIELDS, // Scrub by field name
   paths: ['request.headers.authorization'], // Scrub specific paths
@@ -706,31 +254,10 @@ const redactor = createRedactor({
 });
 ```
 
-### 4. Monitor Scrubbing Activity
-
-```typescript
-// ✅ Good: Track what was scrubbed for debugging
-const result = redactor.scrub(data);
-
-if (result.scrubbed) {
-  console.log('Scrubbed paths:', result.scrubbedPaths);
-}
-
-logger.info(result.data);
-```
-
 ---
-
-## Performance Considerations
-
-- **Overhead**: <0.02ms p95 for typical log entries
-- **Throughput**: 194k+ logs/sec average
-- **Memory**: Scrubbing is immutable (creates new objects)
-- **Caching**: Redactor instances cache path lookups for O(1) performance
 
 ## Additional Resources
 
-- [API Documentation](../api/README.md)
-- [Core Scrubber Guide](../core/scrubber.md)
-- [Presets Reference](../core/presets.md)
-- [Performance Benchmarks](../benchmarks.md)
+- [Sentry Integration Examples](./sentry-integration.md)
+- [Core Scrubber API](../../README.md#core-scrubber)
+- [Preset Field Lists](../../README.md#preset-field-lists)

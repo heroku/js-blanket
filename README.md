@@ -213,6 +213,9 @@ under 200 lines per commit, and ensure tests and type checks pass. See
 
 For more detailed examples and use cases:
 
-- [Logging Integration Examples](docs/examples/logging-integration.md)
+- [Sentry Integration Examples](docs/examples/sentry-integration.md) - Using
+  js-blanket with Sentry's beforeSend hooks
+- [Logging Integration Examples](docs/examples/logging-integration.md) - Using
+  js-blanket with logging libraries
 - [Migration Guides](docs/MIGRATION.md)
 - [Project Status](docs/PROJECT-STATUS.md)
