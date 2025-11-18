@@ -22,7 +22,7 @@
     "build:esm": "rm -rf dist/esm && tsc -p tsconfig.esm.json",
     "build": "pnpm run build:cjs && pnpm run build:esm",
     "test": "c8 mocha --require ./scripts/test-setup.mjs --forbid-only \"dist/esm/**/*.test.js\"",
-    "prepare": "husky",
+    "prepare": "husky && pnpm run build",
     "lint": "eslint \"src/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix",
     "prettier": "prettier . --write",
@@ -53,9 +53,12 @@
     "typescript": "^5.9.3"
   },
   "publishConfig": {
-    "access": "public",
+    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
+  "files": [
+    "/dist"
+  ],
   "author": "Heroku",
   "license": "Apache-2.0",
   "repository": {
