@@ -1,0 +1,22 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Perform a dry run (no actual publishing)'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  release:
+    uses: heroku/npm-release-workflows/.github/workflows/release.yml@main
+    with:
+      dry_run: ${{ inputs.dry_run }}
+      runs_on: 'sfdc-hk-ubuntu-latest'
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+    secrets: inherit

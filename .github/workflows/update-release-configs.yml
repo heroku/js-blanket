@@ -1,0 +1,14 @@
+name: Update Release Configs
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-configs:
+    uses: heroku/npm-release-workflows/.github/workflows/update-release-configs.yml@main
+    with:
+      runs_on: 'sfdc-hk-ubuntu-latest'
+    permissions:
+      contents: write
+      pull-requests: write
+    secrets: inherit
