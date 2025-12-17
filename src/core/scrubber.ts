@@ -219,8 +219,11 @@ export class Scrubber {
 
     // Check against patterns (SSN, credit cards, etc.)
     for (const pattern of this.config.patterns) {
+      pattern.lastIndex = 0; // Reset before test (F1: prevent lastIndex bypass)
       if (pattern.test(scrubbed)) {
-        scrubbed = scrubbed.replace(pattern, this.config.replacement);
+        pattern.lastIndex = 0; // Reset before replace
+        // Use function replacement to prevent $& injection (F3)
+        scrubbed = scrubbed.replace(pattern, () => this.config.replacement);
         didScrub = true;
       }
     }
