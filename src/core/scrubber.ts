@@ -247,41 +247,84 @@ export class Scrubber {
     });
   }
 
+  /**
+   * Check if a value has a toJSON method (F7: prevent code execution)
+   */
+  private hasToJSON(value: unknown): boolean {
+    if (value === null || typeof value !== 'object') {
+      return false;
+    }
+    return (
+      'toJSON' in value &&
+      typeof (value as Record<string, unknown>).toJSON === 'function'
+    );
+  }
+
+  /**
+   * Check if object tree contains any toJSON methods (F7)
+   */
+  private containsToJSON(obj: unknown, depth = 0): boolean {
+    if (depth > 10 || obj === null || typeof obj !== 'object') {
+      return false;
+    }
+    if (this.hasToJSON(obj)) {
+      return true;
+    }
+    if (Array.isArray(obj)) {
+      return obj.some((item) => this.containsToJSON(item, depth + 1));
+    }
+    return Object.values(obj).some((val) =>
+      this.containsToJSON(val, depth + 1)
+    );
+  }
+
+  /**
+   * Manual clone without JSON.stringify (F7: safe for objects with toJSON)
+   */
+  private manualClone<T>(obj: T): T {
+    const seen = new WeakMap();
+
+    const clone = (value: any): any => {
+      if (value === null || typeof value !== 'object') {
+        return value;
+      }
+
+      if (seen.has(value)) {
+        return seen.get(value);
+      }
+
+      if (Array.isArray(value)) {
+        const arr: any[] = [];
+        seen.set(value, arr);
+        value.forEach((item, i) => {
+          arr[i] = clone(item);
+        });
+        return arr;
+      }
+
+      const obj: any = Object.create(null); // F2: prevent prototype pollution
+      seen.set(value, obj);
+      Object.keys(value).forEach((key) => {
+        obj[key] = clone(value[key]);
+      });
+      return obj;
+    };
+
+    return clone(obj);
+  }
+
   private deepClone<T>(obj: T): T {
+    // F7: Skip JSON.stringify if any object has toJSON to prevent code execution
+    if (this.containsToJSON(obj)) {
+      return this.manualClone(obj);
+    }
+
     try {
       // Fast path for JSON-serializable objects
       return JSON.parse(JSON.stringify(obj));
     } catch {
       // Fallback for objects with circular references
-      const seen = new WeakMap();
-
-      function clone(value: any): any {
-        if (value === null || typeof value !== 'object') {
-          return value;
-        }
-
-        if (seen.has(value)) {
-          return seen.get(value);
-        }
-
-        if (Array.isArray(value)) {
-          const arr: any[] = [];
-          seen.set(value, arr);
-          value.forEach((item, i) => {
-            arr[i] = clone(item);
-          });
-          return arr;
-        }
-
-        const obj: any = Object.create(null); // F2: prevent prototype pollution
-        seen.set(value, obj);
-        Object.keys(value).forEach((key) => {
-          obj[key] = clone(value[key]);
-        });
-        return obj;
-      }
-
-      return clone(obj);
+      return this.manualClone(obj);
     }
   }
 }
