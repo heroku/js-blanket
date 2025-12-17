@@ -22,4 +22,6 @@ jobs:
       - name: Enable Corepack
         run: corepack enable
       - run: pnpm install --frozen-lockfile
+      - name: Security audit
+        run: pnpm audit --audit-level=moderate
       - run: pnpm run ci
