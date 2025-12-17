@@ -89,6 +89,8 @@ export class Scrubber {
       patterns: config.patterns || [],
       replacement: config.replacement || '[SCRUBBED]',
       recursive: config.recursive !== undefined ? config.recursive : true,
+      maxDepth: config.maxDepth ?? 100, // F5: DoS prevention
+      maxDepthBehavior: config.maxDepthBehavior ?? 'truncate',
     };
 
     // Pre-compute path set for O(1) lookups
@@ -141,7 +143,7 @@ export class Scrubber {
     // Reset circular refs tracker for each scrub operation
     this.circularRefs = new WeakSet();
 
-    const scrubbed = this.scrubObject(cloned, '', scrubbedPaths);
+    const scrubbed = this.scrubObject(cloned, '', scrubbedPaths, 0);
 
     return {
       data: scrubbed,
@@ -150,7 +152,20 @@ export class Scrubber {
     };
   }
 
-  private scrubObject(obj: any, path: string, paths: string[]): any {
+  private scrubObject(
+    obj: any,
+    path: string,
+    paths: string[],
+    depth: number = 0
+  ): any {
+    // F5: Check depth limit for DoS prevention
+    if (depth > this.config.maxDepth) {
+      if (this.config.maxDepthBehavior === 'throw') {
+        throw new Error(`Max depth exceeded at path: ${path}`);
+      }
+      return '[MAX_DEPTH_EXCEEDED]';
+    }
+
     // Handle circular references
     if (obj && typeof obj === 'object') {
       if (this.circularRefs.has(obj)) {
@@ -177,7 +192,7 @@ export class Scrubber {
         }
 
         // Recursively scrub array items
-        return this.scrubObject(item, arrayPath, paths);
+        return this.scrubObject(item, arrayPath, paths, depth + 1);
       });
     }
 
@@ -202,7 +217,7 @@ export class Scrubber {
 
       // Recursively scrub value
       result[key] = this.config.recursive
-        ? this.scrubObject(value, keyPath, paths)
+        ? this.scrubObject(value, keyPath, paths, depth + 1)
         : this.scrubValue(value, keyPath, paths);
     }
 
