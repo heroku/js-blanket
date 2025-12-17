@@ -181,8 +181,8 @@ export class Scrubber {
       });
     }
 
-    // Handle objects - create new object (immutable approach)
-    const result: Record<string, unknown> = {};
+    // Handle objects - create null-prototype object (F2: prevent prototype pollution)
+    const result: Record<string, unknown> = Object.create(null);
     for (const [key, value] of Object.entries(obj)) {
       const keyPath = path ? `${path}.${key}` : key;
 
@@ -273,7 +273,7 @@ export class Scrubber {
           return arr;
         }
 
-        const obj: any = {};
+        const obj: any = Object.create(null); // F2: prevent prototype pollution
         seen.set(value, obj);
         Object.keys(value).forEach((key) => {
           obj[key] = clone(value[key]);
