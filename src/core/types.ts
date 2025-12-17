@@ -57,7 +57,7 @@ export interface ScrubConfig {
    * ]
    * ```
    */
-  fields?: (string | RegExp)[];
+  fields?: readonly (string | RegExp)[];
 
   /**
    * Path-based scrubbing: matches specific dot-notation paths
@@ -75,7 +75,7 @@ export interface ScrubConfig {
    * ]
    * ```
    */
-  paths?: string[];
+  paths?: readonly string[];
 
   /**
    * Pattern-based scrubbing: regex patterns for content scrubbing
@@ -94,7 +94,7 @@ export interface ScrubConfig {
    * ]
    * ```
    */
-  patterns?: RegExp[];
+  patterns?: readonly RegExp[];
 
   /**
    * Replacement string for scrubbed values
