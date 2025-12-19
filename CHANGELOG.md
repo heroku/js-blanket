@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/heroku/js-blanket/compare/js-blanket-v1.0.0...js-blanket-v1.0.1) (2025-12-19)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump glob from 10.4.5 to 10.5.0 ([#7](https://github.com/heroku/js-blanket/issues/7)) ([b016e4b](https://github.com/heroku/js-blanket/commit/b016e4b0f2bcba0fe4d19e50eab920699ef01f95))
+* **deps:** Update dependencies resolve js-yaml and glob security alerts ([#13](https://github.com/heroku/js-blanket/issues/13)) ([cb46d0f](https://github.com/heroku/js-blanket/commit/cb46d0f56cddde6501e6094f2595fa2e4fd86f28))
+
 ## [1.0.0](https://github.com/heroku/js-blanket/compare/js-blanket-v0.0.1...js-blanket-v1.0.0) (2025-11-19)
 
 
