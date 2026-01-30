@@ -7,7 +7,7 @@ jobs:
   update-configs:
     uses: heroku/npm-release-workflows/.github/workflows/update-release-configs.yml@main
     with:
-      runs_on: 'sfdc-hk-ubuntu-latest'
+      runs_on: 'ubuntu-latest'
     permissions:
       contents: write
       pull-requests: write

@@ -13,7 +13,7 @@ jobs:
   create-release:
     uses: heroku/npm-release-workflows/.github/workflows/release-on-push.yml@main
     with:
-      runs_on: 'sfdc-hk-ubuntu-latest'
+      runs_on: 'ubuntu-latest'
     permissions:
       contents: write
       pull-requests: write
