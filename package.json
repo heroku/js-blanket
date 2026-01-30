@@ -54,7 +54,6 @@
     "typescript": "^5.9.3"
   },
   "publishConfig": {
-    "access": "restricted",
     "registry": "https://registry.npmjs.org/"
   },
   "files": [

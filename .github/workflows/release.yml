@@ -14,7 +14,7 @@ jobs:
     uses: heroku/npm-release-workflows/.github/workflows/release.yml@main
     with:
       dry_run: ${{ inputs.dry_run }}
-      runs_on: 'sfdc-hk-ubuntu-latest'
+      runs_on: 'ubuntu-latest'
     permissions:
       contents: write
       pull-requests: write
