@@ -57,7 +57,7 @@ export interface ScrubConfig {
    * ]
    * ```
    */
-  fields?: (string | RegExp)[];
+  fields?: readonly (string | RegExp)[];
 
   /**
    * Path-based scrubbing: matches specific dot-notation paths
@@ -75,7 +75,7 @@ export interface ScrubConfig {
    * ]
    * ```
    */
-  paths?: string[];
+  paths?: readonly string[];
 
   /**
    * Pattern-based scrubbing: regex patterns for content scrubbing
@@ -94,7 +94,7 @@ export interface ScrubConfig {
    * ]
    * ```
    */
-  patterns?: RegExp[];
+  patterns?: readonly RegExp[];
 
   /**
    * Replacement string for scrubbed values
@@ -124,6 +124,32 @@ export interface ScrubConfig {
    * ```
    */
   recursive?: boolean;
+
+  /**
+   * Maximum depth for object traversal (F5: DoS prevention)
+   *
+   * Limits how deep the scrubber will traverse nested objects to prevent
+   * stack overflow from maliciously crafted deeply nested payloads.
+   *
+   * @default 100
+   *
+   * @example
+   * ```typescript
+   * maxDepth: 50  // Limit to 50 levels of nesting
+   * maxDepth: Infinity  // No limit (backward compatible)
+   * ```
+   */
+  maxDepth?: number;
+
+  /**
+   * Behavior when max depth is exceeded
+   *
+   * - 'truncate': Replace the value with '[MAX_DEPTH_EXCEEDED]' (default)
+   * - 'throw': Throw an error with the path where depth was exceeded
+   *
+   * @default 'truncate'
+   */
+  maxDepthBehavior?: 'truncate' | 'throw';
 }
 
 /**

@@ -14,7 +14,7 @@
  * const result = scrubber.scrub(data);
  * ```
  */
-export const HEROKU_FIELDS = [
+export const HEROKU_FIELDS: readonly (string | RegExp)[] = Object.freeze([
   // Authentication & Sessions
   'access_token',
   /api[-_]?key/i, // Matches api_key, api-key, apikey (case insensitive)
@@ -56,7 +56,7 @@ export const HEROKU_FIELDS = [
 
   // Infrastructure
   'logplexUrl',
-];
+]);
 
 /**
  * GDPR-relevant PII field patterns
@@ -79,14 +79,14 @@ export const HEROKU_FIELDS = [
  * });
  * ```
  */
-export const GDPR_FIELDS = [
+export const GDPR_FIELDS: readonly string[] = Object.freeze([
   'email',
   'phone',
   'address',
   'postal_code',
   'ssn',
   'tax_id',
-];
+]);
 
 /**
  * PCI-DSS relevant field patterns
@@ -112,9 +112,9 @@ export const GDPR_FIELDS = [
  * });
  * ```
  */
-export const PCI_FIELDS = [
+export const PCI_FIELDS: readonly string[] = Object.freeze([
   'card_number',
   'cvv',
   'credit_card',
   'payment_method',
-];
+]);

@@ -89,6 +89,8 @@ export class Scrubber {
       patterns: config.patterns || [],
       replacement: config.replacement || '[SCRUBBED]',
       recursive: config.recursive !== undefined ? config.recursive : true,
+      maxDepth: config.maxDepth ?? 100, // F5: DoS prevention
+      maxDepthBehavior: config.maxDepthBehavior ?? 'truncate',
     };
 
     // Pre-compute path set for O(1) lookups
@@ -141,7 +143,7 @@ export class Scrubber {
     // Reset circular refs tracker for each scrub operation
     this.circularRefs = new WeakSet();
 
-    const scrubbed = this.scrubObject(cloned, '', scrubbedPaths);
+    const scrubbed = this.scrubObject(cloned, '', scrubbedPaths, 0);
 
     return {
       data: scrubbed,
@@ -150,7 +152,20 @@ export class Scrubber {
     };
   }
 
-  private scrubObject(obj: any, path: string, paths: string[]): any {
+  private scrubObject(
+    obj: any,
+    path: string,
+    paths: string[],
+    depth: number = 0
+  ): any {
+    // F5: Check depth limit for DoS prevention
+    if (depth > this.config.maxDepth) {
+      if (this.config.maxDepthBehavior === 'throw') {
+        throw new Error(`Max depth exceeded at path: ${path}`);
+      }
+      return '[MAX_DEPTH_EXCEEDED]';
+    }
+
     // Handle circular references
     if (obj && typeof obj === 'object') {
       if (this.circularRefs.has(obj)) {
@@ -177,12 +192,12 @@ export class Scrubber {
         }
 
         // Recursively scrub array items
-        return this.scrubObject(item, arrayPath, paths);
+        return this.scrubObject(item, arrayPath, paths, depth + 1);
       });
     }
 
-    // Handle objects - create new object (immutable approach)
-    const result: Record<string, unknown> = {};
+    // Handle objects - create null-prototype object (F2: prevent prototype pollution)
+    const result: Record<string, unknown> = Object.create(null);
     for (const [key, value] of Object.entries(obj)) {
       const keyPath = path ? `${path}.${key}` : key;
 
@@ -202,7 +217,7 @@ export class Scrubber {
 
       // Recursively scrub value
       result[key] = this.config.recursive
-        ? this.scrubObject(value, keyPath, paths)
+        ? this.scrubObject(value, keyPath, paths, depth + 1)
         : this.scrubValue(value, keyPath, paths);
     }
 
@@ -219,8 +234,11 @@ export class Scrubber {
 
     // Check against patterns (SSN, credit cards, etc.)
     for (const pattern of this.config.patterns) {
+      pattern.lastIndex = 0; // Reset before test (F1: prevent lastIndex bypass)
       if (pattern.test(scrubbed)) {
-        scrubbed = scrubbed.replace(pattern, this.config.replacement);
+        pattern.lastIndex = 0; // Reset before replace
+        // Use function replacement to prevent $& injection (F3)
+        scrubbed = scrubbed.replace(pattern, () => this.config.replacement);
         didScrub = true;
       }
     }
@@ -244,41 +262,84 @@ export class Scrubber {
     });
   }
 
+  /**
+   * Check if a value has a toJSON method (F7: prevent code execution)
+   */
+  private hasToJSON(value: unknown): boolean {
+    if (value === null || typeof value !== 'object') {
+      return false;
+    }
+    return (
+      'toJSON' in value &&
+      typeof (value as Record<string, unknown>).toJSON === 'function'
+    );
+  }
+
+  /**
+   * Check if object tree contains any toJSON methods (F7)
+   */
+  private containsToJSON(obj: unknown, depth = 0): boolean {
+    if (depth > 10 || obj === null || typeof obj !== 'object') {
+      return false;
+    }
+    if (this.hasToJSON(obj)) {
+      return true;
+    }
+    if (Array.isArray(obj)) {
+      return obj.some((item) => this.containsToJSON(item, depth + 1));
+    }
+    return Object.values(obj).some((val) =>
+      this.containsToJSON(val, depth + 1)
+    );
+  }
+
+  /**
+   * Manual clone without JSON.stringify (F7: safe for objects with toJSON)
+   */
+  private manualClone<T>(obj: T): T {
+    const seen = new WeakMap();
+
+    const clone = (value: any): any => {
+      if (value === null || typeof value !== 'object') {
+        return value;
+      }
+
+      if (seen.has(value)) {
+        return seen.get(value);
+      }
+
+      if (Array.isArray(value)) {
+        const arr: any[] = [];
+        seen.set(value, arr);
+        value.forEach((item, i) => {
+          arr[i] = clone(item);
+        });
+        return arr;
+      }
+
+      const obj: any = Object.create(null); // F2: prevent prototype pollution
+      seen.set(value, obj);
+      Object.keys(value).forEach((key) => {
+        obj[key] = clone(value[key]);
+      });
+      return obj;
+    };
+
+    return clone(obj);
+  }
+
   private deepClone<T>(obj: T): T {
+    // F7: Skip JSON.stringify if any object has toJSON to prevent code execution
+    if (this.containsToJSON(obj)) {
+      return this.manualClone(obj);
+    }
+
     try {
       // Fast path for JSON-serializable objects
       return JSON.parse(JSON.stringify(obj));
     } catch {
       // Fallback for objects with circular references
-      const seen = new WeakMap();
-
-      function clone(value: any): any {
-        if (value === null || typeof value !== 'object') {
-          return value;
-        }
-
-        if (seen.has(value)) {
-          return seen.get(value);
-        }
-
-        if (Array.isArray(value)) {
-          const arr: any[] = [];
-          seen.set(value, arr);
-          value.forEach((item, i) => {
-            arr[i] = clone(item);
-          });
-          return arr;
-        }
-
-        const obj: any = {};
-        seen.set(value, obj);
-        Object.keys(value).forEach((key) => {
-          obj[key] = clone(value[key]);
-        });
-        return obj;
-      }
-
-      return clone(obj);
+      return this.manualClone(obj);
     }
   }
 }

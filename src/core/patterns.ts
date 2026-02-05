@@ -1,7 +1,7 @@
 /**
  * Regex patterns for detecting PII in string content
  */
-export const PII_PATTERNS = [
+export const PII_PATTERNS: readonly RegExp[] = Object.freeze([
   // Social Security Numbers (US)
   /\b\d{3}-\d{2}-\d{4}\b/g,
 
@@ -13,4 +13,4 @@ export const PII_PATTERNS = [
 
   // JWT tokens
   /\beyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g,
-];
+]);
