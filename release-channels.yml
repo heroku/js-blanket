@@ -1,17 +1,19 @@
-# Release Channels Configuration
-#
-# The base-config (release type, changelog sections, etc.) is shared across
-# all projects and is automatically loaded from npm-release-workflows/templates/base-config.yml.
-# You should NOT include base-config in this file.
+# Release channels configuration - generates release-please config files
 
 channels:
   main:
     branch: main
     prerelease: false
     npm-tag: latest
-
+  
   beta:
     branch: beta
     prerelease: true
     prerelease-type: beta
     npm-tag: beta
+
+  # alpha:
+  #   branch: alpha
+  #   prerelease: true
+  #   prerelease-type: alpha
+  #   npm-tag: alpha

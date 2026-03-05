@@ -1,20 +1,26 @@
 name: Release on Push
 
-# This workflow creates GitHub releases and updates PR labels after release PRs are merged
-# It triggers on push to branches defined in release-channels.yml (main, beta, alpha, etc.)
+# Automatically creates GitHub releases after release PRs are merged
+# Uses GitHub App (vars.DEV_TOOLS_RELEASE_WORKFLOW_APP_ID, secrets.DEV_TOOLS_RELEASE_WORKFLOW_APP_PRIVATE_KEY)
+
 on:
   push:
     branches:
       - main
       - beta
-      - alpha
+      # - alpha  # Uncomment if you have an alpha channel
 
 jobs:
   create-release:
     uses: heroku/npm-release-workflows/.github/workflows/release-on-push.yml@main
     with:
-      runs_on: 'ubuntu-latest'
+      runs_on: sfdc-hk-ubuntu-latest  # Options: ubuntu-latest | sfdc-hk-ubuntu-latest | pub-hk-ubuntu-24.04-ip
+      package-manager: pnpm  # Options: npm | yarn | pnpm
+      app_id: ${{ vars.DEV_TOOLS_RELEASE_WORKFLOW_APP_ID }}
+      # owner scopes the token to the org installation so it can access all repos in the installation
+      owner: ${{ github.repository_owner }}
+    secrets:
+      private_key: ${{ secrets.DEV_TOOLS_RELEASE_WORKFLOW_APP_PRIVATE_KEY }}
     permissions:
       contents: write
       pull-requests: write
-    secrets: inherit
