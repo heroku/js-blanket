@@ -1,41 +1,44 @@
 <!--
-When creating a PR, be sure to prepend the PR title with the Conventional Commit type (`feat`, `fix`, or `chore`).
+When creating a PR, be sure to prepend the PR title with the Conventional Commit type (`feat`, `fix`, or `chore`). This is how we manage package versioning and generating CHANGELOG notes.
 
 Examples:
+- "feat: add growl notification to spaces:wait"
+- "fix: handle special characters in app names"
+- "chore: add dist directory to .gitignore"
 
-`feat: add growl notification to spaces:wait`
-
-`fix: handle special characters in app names`
-
-`chore: refactor tests`
+The expected Conventional Commit types are listed below.
 
 Learn more about [Conventional Commits](https://www.conventionalcommits.org/).
 -->
 
 ## Summary
-
 <!-- Brief description of the changes in this PR. -->
 
 ## Type of Change
+### Breaking Changes (major semver update)
+- [ ] Add a `!` after your change type to denote a change that breaks current behavior
 
-- [ ] **fix**: Bug fix or issue (patch semvar update)
-- [ ] **feat**: Introduces a new feature to the codebase (minor semvar update)
-- [ ] **perf**: Performance improvement
-- [ ] **docs**: Documentation only changes
-- [ ] **tests**: Adding missing tests or correcting existing tests
-- [ ] **chore**: Code cleanup tasks, dependency updates, or other changes
+### Feature Additions (minor semver update)
+- [ ] **feat**: Introduces a new feature to the codebase
 
-Note: Add a `!` after your change type to denote a breaking change.
+### Patch Updates (patch semver update)
+- [ ] **fix**: Bug fix
+- [ ] **deps**: Dependency upgrade
+- [ ] **revert**: Revert a previous commit
+- [ ] **chore**: Change that does not affect production code
+- [ ] **refactor**: Refactoring existing code without changing behavior
+- [ ] **test**: Add/update/remove tests
 
-## Additional Context
+## Testing
+**Notes**: 
+<!-- Add any context/setup necessary for testing. -->
 
-<!--
-  * For fixes, provide reproduction steps and expected vs actual behavior
-  * For features, describe the objective and rationale for this change.
-  * If this is a breaking change, describe what functionality is affected and a migration path for existing users
-  * Any additional information, links, screenshots, or attachments that help describe the issue
--->
+**Steps**:
+1. Replace this text with a list of steps used to validate changes or type 'Passing CI suffices'.
+2. ...
 
-## Related Issue
+## Screenshots (if applicable)
 
-Closes #[Github issue number]
+## Related Issues
+GitHub issue: #[GitHub issue number]
+GUS work item: [WI number](WI link)
