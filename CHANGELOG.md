@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.0.1](https://github.com/heroku/js-blanket/compare/js-blanket-v1.0.0...js-blanket-v1.0.1) (2026-06-17)
+
+
+### Dependencies
+
+* bump actions/checkout from 4 to 6 ([#20](https://github.com/heroku/js-blanket/issues/20)) ([8efb2a1](https://github.com/heroku/js-blanket/commit/8efb2a1db9259a70549d05fbcdaee4f641bf86b8))
+* bump actions/create-github-app-token from 2 to 3 ([#27](https://github.com/heroku/js-blanket/issues/27)) ([ca1ba8c](https://github.com/heroku/js-blanket/commit/ca1ba8ca9ff6b6a10ff5048cb1fcbfdeb51cf21e))
+* bump actions/setup-node from 4 to 6 ([#19](https://github.com/heroku/js-blanket/issues/19)) ([cec0a6e](https://github.com/heroku/js-blanket/commit/cec0a6e5bc4677802dd1c3248e6394a2448e998a))
+* bump flatted from 3.4.1 to 3.4.2 ([#29](https://github.com/heroku/js-blanket/issues/29)) ([6f27350](https://github.com/heroku/js-blanket/commit/6f2735065c218e06f646832672aff2d0534c3f49))
+* fix high security vulns ([#35](https://github.com/heroku/js-blanket/issues/35)) ([2951a7b](https://github.com/heroku/js-blanket/commit/2951a7b55bef570ec565b20c98b6854a543b26a8))
+* resolve audit vulnerabilities and tighten release tooling ([#39](https://github.com/heroku/js-blanket/issues/39)) ([59c30e0](https://github.com/heroku/js-blanket/commit/59c30e01dc11affae9a4cf5dce03920cd78774d8))
+
 ## [1.0.0](https://github.com/heroku/js-blanket/compare/js-blanket-v0.0.1...js-blanket-v1.0.0) (2025-11-19)
 
 
