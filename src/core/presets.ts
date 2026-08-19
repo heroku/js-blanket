@@ -36,6 +36,7 @@ export const HEROKU_FIELDS: readonly (string | RegExp)[] = Object.freeze([
   'secret_token',
   'confirm_password',
   'password_confirmation',
+  'pre_shared_key',
   /client[-_]?secret/i, // Matches client_secret, client-secret, clientsecret
 
   // Tokens
