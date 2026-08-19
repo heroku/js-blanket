@@ -3,3 +3,6 @@ dist/
 
 # Generated files
 CHANGELOG.md
+
+# Lockfiles (managed by pnpm; must stay in its canonical format)
+pnpm-lock.yaml
