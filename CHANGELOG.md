@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/heroku/js-blanket/compare/js-blanket-v1.0.1...js-blanket-v1.1.0) (2026-08-21)
+
+
+### Features
+
+* **presets:** add pre_shared_key to HEROKU_FIELDS ([#51](https://github.com/heroku/js-blanket/issues/51)) ([3210f7b](https://github.com/heroku/js-blanket/commit/3210f7ba354edce15e9d0e16879f0eea0b5adae2))
+
+
+### Dependencies
+
+* refresh dev lockfile deps to patched versions ([#53](https://github.com/heroku/js-blanket/issues/53)) ([040dbd9](https://github.com/heroku/js-blanket/commit/040dbd98ff89fd4c12e29f2f91fdc1ac23bd506f))
+
 ## [1.0.1](https://github.com/heroku/js-blanket/compare/js-blanket-v1.0.0...js-blanket-v1.0.1) (2026-06-17)
 
 
