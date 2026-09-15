@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/heroku/js-blanket/compare/js-blanket-v1.1.0...js-blanket-v1.1.1) (2026-09-15)
+
+
+### Dependencies
+
+* fix Dependabot security alerts ([#58](https://github.com/heroku/js-blanket/issues/58)) ([b926cc4](https://github.com/heroku/js-blanket/commit/b926cc4d415a99b44e7ad42e21ec09c714b08939))
+
 ## [1.1.0](https://github.com/heroku/js-blanket/compare/js-blanket-v1.0.1...js-blanket-v1.1.0) (2026-08-21)
 
 
