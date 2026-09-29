@@ -22,7 +22,7 @@
     "build:esm": "rimraf dist/esm && tsc -p tsconfig.esm.json",
     "build": "pnpm run build:cjs && pnpm run build:esm",
     "test": "mocha --require ./scripts/test-setup.mjs --forbid-only \"dist/esm/**/*.test.js\"",
-    "test:watch": "mocha --parallel --watch --require ./scripts/test-setup.mjs \"dist/esm/**/*.test.js\"",
+    "test:watch": "mocha --parallel --watch --reporter dot --require ./scripts/test-setup.mjs \"dist/esm/**/*.test.js\"",
     "test:coverage": "c8 --reporter=text-summary --reporter=lcovonly mocha --require ./scripts/test-setup.mjs --forbid-only \"dist/esm/**/*.test.js\"",
     "prepare": "husky && pnpm run build",
     "lint": "eslint \"src/**/*.{js,ts}\"",
