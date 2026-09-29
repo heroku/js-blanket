@@ -2,7 +2,7 @@
   "all": true,
   "include": ["dist/esm/**/*.js"],
   "exclude": ["**/*.test.js", "test/**/*", "node_modules/**/*"],
-  "reporter": ["text", "html", "text-summary"],
+  "reporter": ["text-summary", "lcovonly"],
   "clean": true,
   "temp-directory": "./coverage/tmp",
   "report-dir": "./coverage",
