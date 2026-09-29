@@ -30,11 +30,10 @@
     "prettier": "prettier . --write",
     "format": "pnpm run prettier && pnpm run lint:fix",
     "pretest": "pnpm run build:cjs && pnpm run build:esm && pnpm run type-check",
-    "pretest:coverage": "pnpm run build:cjs && pnpm run build:esm",
+    "pretest:coverage": "pnpm run build:cjs && pnpm run build:esm && pnpm run type-check",
     "type-check": "tsc --noEmit -p tsconfig.json",
     "lint-staged": "npx lint-staged",
-    "check": "pnpm run format && pnpm run type-check && pnpm test",
-    "ci": "pnpm run lint && pnpm run type-check && pnpm run test:coverage"
+    "check": "pnpm run format && pnpm run type-check && pnpm test"
   },
   "dependencies": {
     "tslib": "^2.8.1"
