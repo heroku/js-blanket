@@ -37,6 +37,7 @@ export const HEROKU_FIELDS: readonly (string | RegExp)[] = Object.freeze([
   'confirm_password',
   'password_confirmation',
   'pre_shared_key',
+  'private_key', // TLS/SSH/GPG private keys (not matched by the api_key pattern)
   /client[-_]?secret/i, // Matches client_secret, client-secret, clientsecret
 
   // Tokens
@@ -48,6 +49,9 @@ export const HEROKU_FIELDS: readonly (string | RegExp)[] = Object.freeze([
   /authorization/i,
   /cookie/i,
   /x-refresh-token/i,
+  'heroku-two-factor-code',
+  'x-addon-sso',
+  'heroku-webhook-hmac-sha256', // Heroku webhook signature header
 
   // SSO & Sessions
   'www-sso-session',
@@ -57,6 +61,8 @@ export const HEROKU_FIELDS: readonly (string | RegExp)[] = Object.freeze([
 
   // Infrastructure
   'logplexUrl',
+  'database_url', // Config var whose value embeds credentials
+  'connection_string', // Config var whose value embeds credentials
 ]);
 
 /**

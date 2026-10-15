@@ -34,6 +34,30 @@ describe('js-blanket', () => {
     expect(hasApiKey).to.be.true;
   });
 
+  it('scrubs the Heroku two-factor-code and addon-SSO headers via HEROKU_FIELDS', () => {
+    const scrubber = new Scrubber({ fields: HEROKU_FIELDS });
+    const result = scrubber.scrub({
+      'heroku-two-factor-code': '123456',
+      'x-addon-sso': 'sso-token',
+    });
+    expect(result.data['heroku-two-factor-code']).to.equal('[SCRUBBED]');
+    expect(result.data['x-addon-sso']).to.equal('[SCRUBBED]');
+  });
+
+  it('scrubs private keys, credential-bearing URLs, and the webhook signature header via HEROKU_FIELDS', () => {
+    const scrubber = new Scrubber({ fields: HEROKU_FIELDS });
+    const result = scrubber.scrub({
+      private_key: '-----BEGIN PRIVATE KEY-----',
+      database_url: 'postgres://user:pass@host:5432/db',
+      connection_string: 'redis://user:pass@host:6379',
+      'heroku-webhook-hmac-sha256': 'c2lnbmF0dXJl',
+    });
+    expect(result.data.private_key).to.equal('[SCRUBBED]');
+    expect(result.data.database_url).to.equal('[SCRUBBED]');
+    expect(result.data.connection_string).to.equal('[SCRUBBED]');
+    expect(result.data['heroku-webhook-hmac-sha256']).to.equal('[SCRUBBED]');
+  });
+
   it('provides PII_PATTERNS preset with common PII regex patterns', () => {
     expect(PII_PATTERNS).to.be.an('array');
     expect(PII_PATTERNS.length).to.be.greaterThan(0);
