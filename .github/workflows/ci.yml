@@ -43,3 +43,5 @@ jobs:
         run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
+      - name: Verify package exports
+        run: pnpm run check:exports

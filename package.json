@@ -10,12 +10,49 @@
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/esm/index.d.ts",
+  "sideEffects": false,
   "exports": {
     ".": {
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "types": "./dist/esm/index.d.ts"
-    }
+      "import": {
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      }
+    },
+    "./core/scrubber": {
+      "import": {
+        "types": "./dist/esm/core/scrubber.d.ts",
+        "default": "./dist/esm/core/scrubber.js"
+      },
+      "require": {
+        "types": "./dist/cjs/core/scrubber.d.ts",
+        "default": "./dist/cjs/core/scrubber.js"
+      }
+    },
+    "./core/presets": {
+      "import": {
+        "types": "./dist/esm/core/presets.d.ts",
+        "default": "./dist/esm/core/presets.js"
+      },
+      "require": {
+        "types": "./dist/cjs/core/presets.d.ts",
+        "default": "./dist/cjs/core/presets.js"
+      }
+    },
+    "./core/patterns": {
+      "import": {
+        "types": "./dist/esm/core/patterns.d.ts",
+        "default": "./dist/esm/core/patterns.js"
+      },
+      "require": {
+        "types": "./dist/cjs/core/patterns.d.ts",
+        "default": "./dist/cjs/core/patterns.js"
+      }
+    },
+    "./package.json": "./package.json"
   },
   "scripts": {
     "build:cjs": "rimraf dist/cjs && tsc -p tsconfig.cjs.json && mkdir -p dist/cjs && echo '{\"type\": \"commonjs\"}' > dist/cjs/package.json",
@@ -32,6 +69,7 @@
     "pretest": "pnpm run build:cjs && pnpm run build:esm && pnpm run type-check",
     "pretest:coverage": "pnpm run build:cjs && pnpm run build:esm && pnpm run type-check",
     "type-check": "tsc --noEmit -p tsconfig.json",
+    "check:exports": "pnpm run build && attw --pack --profile node16 && publint",
     "lint-staged": "npx lint-staged",
     "check": "pnpm run format && pnpm run type-check && pnpm test"
   },
@@ -39,6 +77,7 @@
     "tslib": "^2.8.1"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@eslint/js": "^10.0.1",
     "@types/chai": "^5.2.3",
     "@types/mocha": "^10.0.10",
@@ -53,6 +92,7 @@
     "lint-staged": "^17.5.1",
     "mocha": "^12.0.2",
     "prettier": "^3.8.4",
+    "publint": "^0.3.25",
     "rimraf": "^6.1.3",
     "typescript": "^5.9.3"
   },
@@ -60,7 +100,9 @@
     "registry": "https://registry.npmjs.org/"
   },
   "files": [
-    "/dist"
+    "/dist",
+    "!dist/**/*.test.*",
+    "!dist/**/*.tsbuildinfo"
   ],
   "author": "Heroku",
   "license": "Apache-2.0",
