@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/heroku/js-blanket/compare/js-blanket-v1.1.1...js-blanket-v1.2.0) (2026-10-15)
+
+
+### Features
+
+* **presets:** expand HEROKU_FIELDS and harden packaging ([#68](https://github.com/heroku/js-blanket/issues/68)) ([aba89b9](https://github.com/heroku/js-blanket/commit/aba89b9993f4eea18d2e6a308f566f22098827ff))
+
 ## [1.1.1](https://github.com/heroku/js-blanket/compare/js-blanket-v1.1.0...js-blanket-v1.1.1) (2026-09-22)
 
 
