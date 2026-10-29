@@ -30,6 +30,7 @@ export const HEROKU_FIELDS: readonly (string | RegExp)[] = Object.freeze([
 
   // Passwords & Secrets
   'password',
+  'database_password', // Postgres/Redis password field (also covered by the `password` substring match; listed explicitly)
   'passwd',
   'old_secret',
   'secret',
@@ -62,6 +63,7 @@ export const HEROKU_FIELDS: readonly (string | RegExp)[] = Object.freeze([
   // Infrastructure
   'logplexUrl',
   'database_url', // Config var whose value embeds credentials
+  'resource_url', // Addon resource URL whose value embeds credentials (e.g. postgres://user:pass@host/db)
   'connection_string', // Config var whose value embeds credentials
 ]);
 

@@ -49,11 +49,15 @@ describe('js-blanket', () => {
     const result = scrubber.scrub({
       private_key: '-----BEGIN PRIVATE KEY-----',
       database_url: 'postgres://user:pass@host:5432/db',
+      resource_url: 'postgres://user:pass@host:5432/db',
+      database_password: 'super-secret',
       connection_string: 'redis://user:pass@host:6379',
       'heroku-webhook-hmac-sha256': 'c2lnbmF0dXJl',
     });
     expect(result.data.private_key).to.equal('[SCRUBBED]');
     expect(result.data.database_url).to.equal('[SCRUBBED]');
+    expect(result.data.resource_url).to.equal('[SCRUBBED]');
+    expect(result.data.database_password).to.equal('[SCRUBBED]');
     expect(result.data.connection_string).to.equal('[SCRUBBED]');
     expect(result.data['heroku-webhook-hmac-sha256']).to.equal('[SCRUBBED]');
   });
