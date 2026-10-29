@@ -16,12 +16,10 @@
  */
 export const HEROKU_FIELDS: readonly (string | RegExp)[] = Object.freeze([
   // Base substring matches. Field matching is case-insensitive *substring*
-  // (see Scrubber.isSensitiveField), so these three cover every key that
-  // merely contains them — `token` catches access_token / oauth_token /
-  // authenticity_token / x-refresh-token / secret_token / bouncer.*, `secret`
-  // catches client_secret / old_secret / *_session_secret, `password` catches
-  // database_password / confirm_password / password_confirmation. Do NOT
-  // re-list those variants; it's dead weight that the base entries already match.
+  // (see Scrubber.isSensitiveField), so each of these scrubs any key that
+  // contains it — `token` covers access_token / oauth_token / secret_token,
+  // `secret` covers client_secret / old_secret, `password` covers
+  // database_password / confirm_password, and so on.
   'token',
   'secret',
   'password',
