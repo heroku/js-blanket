@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/heroku/js-blanket/compare/js-blanket-v1.2.0...js-blanket-v1.3.0) (2026-10-30)
+
+
+### Features
+
+* **presets:** broaden credentialed-URL coverage and prune redundant HEROKU_FIELDS entries ([#72](https://github.com/heroku/js-blanket/issues/72)) ([605838a](https://github.com/heroku/js-blanket/commit/605838afec1cd29811ed5cb43c376799332d902e))
+
 ## [1.2.0](https://github.com/heroku/js-blanket/compare/js-blanket-v1.1.1...js-blanket-v1.2.0) (2026-10-15)
 
 
