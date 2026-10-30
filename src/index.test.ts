@@ -49,13 +49,59 @@ describe('js-blanket', () => {
     const result = scrubber.scrub({
       private_key: '-----BEGIN PRIVATE KEY-----',
       database_url: 'postgres://user:pass@host:5432/db',
+      resource_url: 'postgres://user:pass@host:5432/db',
+      database_password: 'super-secret',
       connection_string: 'redis://user:pass@host:6379',
       'heroku-webhook-hmac-sha256': 'c2lnbmF0dXJl',
     });
     expect(result.data.private_key).to.equal('[SCRUBBED]');
     expect(result.data.database_url).to.equal('[SCRUBBED]');
+    expect(result.data.resource_url).to.equal('[SCRUBBED]');
+    expect(result.data.database_password).to.equal('[SCRUBBED]');
     expect(result.data.connection_string).to.equal('[SCRUBBED]');
     expect(result.data['heroku-webhook-hmac-sha256']).to.equal('[SCRUBBED]');
+  });
+
+  it('scrubs credential-bearing URL fields regardless of case/separator via HEROKU_FIELDS', () => {
+    const scrubber = new Scrubber({ fields: HEROKU_FIELDS });
+    const result = scrubber.scrub({
+      logplex_url: 'https://logplex.heroku.com/sessions/abc?token=secret',
+      resourceUrl: 'postgres://user:pass@host/db',
+      'resource-url': 'postgres://user:pass@host/db',
+      attach_url: 'rendezvous://rendezvous.runtime.heroku.com:5000/secret',
+      REDIS_URL: 'redis://user:pass@host:6379',
+      REDIS_TLS_URL: 'rediss://user:pass@host:6380',
+      HEROKU_POSTGRESQL_CRIMSON_URL: 'postgres://user:pass@host:5432/db',
+    });
+    expect(result.data.logplex_url).to.equal('[SCRUBBED]');
+    expect(result.data.resourceUrl).to.equal('[SCRUBBED]');
+    expect(result.data['resource-url']).to.equal('[SCRUBBED]');
+    expect(result.data.attach_url).to.equal('[SCRUBBED]');
+    expect(result.data.REDIS_URL).to.equal('[SCRUBBED]');
+    expect(result.data.REDIS_TLS_URL).to.equal('[SCRUBBED]');
+    expect(result.data.HEROKU_POSTGRESQL_CRIMSON_URL).to.equal('[SCRUBBED]');
+  });
+
+  it('still scrubs token/secret/password-family keys via the base substring entries after dedupe', () => {
+    const scrubber = new Scrubber({ fields: HEROKU_FIELDS });
+    const result = scrubber.scrub({
+      access_token: 'a',
+      oauth_token: 'b',
+      authenticity_token: 'c',
+      secret_token: 'd',
+      old_secret: 'e',
+      client_secret: 'f',
+      confirm_password: 'g',
+      password_confirmation: 'h',
+    });
+    expect(result.data.access_token).to.equal('[SCRUBBED]');
+    expect(result.data.oauth_token).to.equal('[SCRUBBED]');
+    expect(result.data.authenticity_token).to.equal('[SCRUBBED]');
+    expect(result.data.secret_token).to.equal('[SCRUBBED]');
+    expect(result.data.old_secret).to.equal('[SCRUBBED]');
+    expect(result.data.client_secret).to.equal('[SCRUBBED]');
+    expect(result.data.confirm_password).to.equal('[SCRUBBED]');
+    expect(result.data.password_confirmation).to.equal('[SCRUBBED]');
   });
 
   it('provides PII_PATTERNS preset with common PII regex patterns', () => {

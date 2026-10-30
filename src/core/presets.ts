@@ -15,40 +15,29 @@
  * ```
  */
 export const HEROKU_FIELDS: readonly (string | RegExp)[] = Object.freeze([
+  // Base substring matches. Field matching is case-insensitive *substring*
+  // (see Scrubber.isSensitiveField), so each of these scrubs any key that
+  // contains it — `token` covers access_token / oauth_token / secret_token,
+  // `secret` covers client_secret / old_secret, `password` covers
+  // database_password / confirm_password, and so on.
+  'token',
+  'secret',
+  'password',
+  'passwd', // not a substring of "password", so listed separately
+
   // Authentication & Sessions
-  'access_token',
   /api[-_]?key/i, // Matches api_key, api-key, apikey (case insensitive)
-  'authenticity_token',
-  'heroku_oauth_token',
   'heroku_session_nonce',
-  'heroku_user_session',
-  'oauth_token',
-  'sudo_oauth_token',
-  'super_user_session_secret',
-  'user_session_secret',
   'postgres_session_nonce',
+  'heroku_user_session',
 
   // Passwords & Secrets
-  'password',
-  'passwd',
-  'old_secret',
-  'secret',
-  'secret_token',
-  'confirm_password',
-  'password_confirmation',
   'pre_shared_key',
   'private_key', // TLS/SSH/GPG private keys (not matched by the api_key pattern)
-  /client[-_]?secret/i, // Matches client_secret, client-secret, clientsecret
-
-  // Tokens
-  'token',
-  'bouncer.token',
-  'bouncer.refresh_token',
 
   // Headers (case-insensitive)
   /authorization/i,
   /cookie/i,
-  /x-refresh-token/i,
   'heroku-two-factor-code',
   'x-addon-sso',
   'heroku-webhook-hmac-sha256', // Heroku webhook signature header
@@ -59,8 +48,17 @@ export const HEROKU_FIELDS: readonly (string | RegExp)[] = Object.freeze([
   // Payment
   'payment_method',
 
-  // Infrastructure
-  'logplexUrl',
+  // Infrastructure — credential-bearing URLs. Keys are matched case- AND
+  // separator-insensitively, so camelCase / kebab / snake all scrub. This
+  // matters because the Platform API returns the snake_case spellings
+  // (logplex_url, attach_url), which a camelCase literal would miss.
+  /logplex[-_]?url/i, // log-session URL — tokenized, grants log access
+  /resource[-_]?url/i, // addon resource URL w/ embedded creds (postgres://user:pass@host/db)
+  /attach[-_]?url/i, // `heroku run`/exec dyno attach URL — rendezvous://…/<secret>
+  // Addon DB connection URLs whose value embeds credentials, e.g. REDIS_URL,
+  // REDIS_TLS_URL, HEROKU_POSTGRESQL_<COLOR>_URL, MONGODB_URL. (kafka_*_url is
+  // intentionally excluded — those are often plain, non-credential broker lists.)
+  /(?:redis|postgres(?:ql)?|mongo(?:db)?|mysql|memcached?|amqp|rabbitmq|clickhouse)[\w-]*_url/i,
   'database_url', // Config var whose value embeds credentials
   'connection_string', // Config var whose value embeds credentials
 ]);
