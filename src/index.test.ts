@@ -4,6 +4,7 @@ import { expect } from 'chai';
 import {
   Scrubber,
   createRedactor,
+  CREDENTIAL_PATTERNS,
   HEROKU_FIELDS,
   PII_PATTERNS,
 } from './index.js';
@@ -107,5 +108,12 @@ describe('js-blanket', () => {
   it('provides PII_PATTERNS preset with common PII regex patterns', () => {
     expect(PII_PATTERNS).to.be.an('array');
     expect(PII_PATTERNS.length).to.be.greaterThan(0);
+  });
+
+  it('provides CREDENTIAL_PATTERNS for credentials in free text', () => {
+    const scrubber = new Scrubber({ patterns: CREDENTIAL_PATTERNS });
+    expect(
+      scrubber.scrub({ message: 'Authorization: Bearer HRKU-abc123' }).data
+    ).to.deep.equal({ message: 'Authorization: Bearer [SCRUBBED]' });
   });
 });

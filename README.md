@@ -107,6 +107,31 @@ const result = scrubber.scrub(data);
 // Result: { message: 'Contact [SCRUBBED] or call [SCRUBBED]' }
 ```
 
+Two pattern presets are exported:
+
+- `PII_PATTERNS`: SSNs, email addresses, US phone numbers and JWTs.
+- `CREDENTIAL_PATTERNS`: credentials in free text, such as error messages and
+  log lines. Heroku API tokens (`HRKU-…`), `Authorization` header values,
+  `Bearer`/`Basic` credentials and the password in a URL. Only the secret is
+  replaced, so the surrounding text still reads.
+
+```typescript
+import { CREDENTIAL_PATTERNS, Scrubber } from '@heroku/js-blanket';
+
+const scrubber = new Scrubber({ patterns: CREDENTIAL_PATTERNS });
+
+scrubber.scrub({
+  message:
+    'connect to postgres://u:p4ss@host/db failed (Authorization: Bearer HRKU-abc123)',
+}).data;
+// { message: 'connect to postgres://[SCRUBBED]@host/db failed (Authorization: Bearer [SCRUBBED])' }
+```
+
+`CREDENTIAL_PATTERNS` matches a standalone `Bearer`/`Basic` value only when it
+looks like a credential, so prose like "Basic size dynos" is left alone. Legacy
+UUID-format Heroku tokens look like any other ID, so redact those by exact
+value.
+
 ## Preset Field Lists
 
 Use battle-tested preset field lists for common PII patterns:
