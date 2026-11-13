@@ -127,6 +127,11 @@ scrubber.scrub({
 // { message: 'connect to postgres://[SCRUBBED]@host/db failed (Authorization: Bearer [SCRUBBED])' }
 ```
 
+An `Authorization` value with any other scheme, such as
+`Digest username="u", response="…"`, is replaced up to the end of the header
+value, because its credential can span several parameters. The scheme word is
+kept for Digest, Negotiate, NTLM, OAuth and Token.
+
 `CREDENTIAL_PATTERNS` matches a standalone `Bearer`/`Basic` value only when it
 looks like a credential, so prose like "Basic size dynos" is left alone. Legacy
 UUID-format Heroku tokens look like any other ID, so redact those by exact

@@ -1,6 +1,6 @@
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
-import { CREDENTIAL_PATTERNS } from './patterns.js';
+import { CREDENTIAL_PATTERNS, PII_PATTERNS } from './patterns.js';
 import { Scrubber } from './scrubber.js';
 
 const scrubber = new Scrubber({ patterns: CREDENTIAL_PATTERNS });
@@ -55,6 +55,86 @@ describe('CREDENTIAL_PATTERNS', () => {
         'Authorization: Bearer [SCRUBBED]'
       );
     });
+
+    it('scrubs every parameter of a Digest, OAuth or Token value', () => {
+      expect(
+        scrub('Authorization: Digest username="u", response="deadbeef0123"')
+      ).to.equal('Authorization: Digest [SCRUBBED]');
+      expect(scrub('Authorization: OAuth oauth_token="tok123456"')).to.equal(
+        'Authorization: OAuth [SCRUBBED]'
+      );
+      expect(scrub('Authorization: Token token="abc123secret"')).to.equal(
+        'Authorization: Token [SCRUBBED]'
+      );
+    });
+
+    it('scrubs a Digest parameter containing & inside quotes', () => {
+      expect(
+        scrub('Authorization: Digest uri="/a?x=1&y=2", response="deadbeef0123"')
+      ).to.equal('Authorization: Digest [SCRUBBED]');
+    });
+
+    it('scrubs the scheme word along with the value for an unknown scheme', () => {
+      expect(
+        scrub(
+          'Authorization: AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20261113/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-date, Signature=fe5f80f77d5f'
+        )
+      ).to.equal('Authorization: [SCRUBBED]');
+    });
+
+    it('stops a quoted value at its closing quote', () => {
+      expect(
+        scrub(
+          '{"authorization":"Digest username=\\"u\\", response=\\"deadbeef\\"","host":"h"}'
+        )
+      ).to.equal('{"authorization":"Digest [SCRUBBED]","host":"h"}');
+      expect(
+        scrub(
+          `{ authorization: 'Digest username="u", response="deadbeef"', host: 'h' }`
+        )
+      ).to.equal(`{ authorization: 'Digest [SCRUBBED]', host: 'h' }`);
+    });
+
+    it('keeps the punctuation that closes the value', () => {
+      expect(scrub('failed (Authorization: Bearer abc123)')).to.equal(
+        'failed (Authorization: Bearer [SCRUBBED])'
+      );
+      expect(scrub('[Authorization: Bearer abc123]')).to.equal(
+        '[Authorization: Bearer [SCRUBBED]]'
+      );
+      expect(scrub('<Authorization: Basic dXNlcjpwYXNz>')).to.equal(
+        '<Authorization: Basic [SCRUBBED]>'
+      );
+      expect(scrub('failed (Authorization: Digest response="x1")')).to.equal(
+        'failed (Authorization: Digest [SCRUBBED])'
+      );
+    });
+
+    it('keeps the rest of a query string', () => {
+      expect(scrub('authorization=abc12345&user=bob')).to.equal(
+        'authorization=[SCRUBBED]&user=bob'
+      );
+    });
+
+    it('scrubs an HRKU token in a header without doubling the replacement', () => {
+      expect(
+        scrub(
+          'connect to postgres://u:p4ss@host/db failed (Authorization: Bearer HRKU-abc123)'
+        )
+      ).to.equal(
+        'connect to postgres://[SCRUBBED]@host/db failed (Authorization: Bearer [SCRUBBED])'
+      );
+    });
+
+    it('leaves a value already replaced by an earlier pattern alone', () => {
+      const combined = new Scrubber({
+        patterns: [...PII_PATTERNS, ...CREDENTIAL_PATTERNS],
+      });
+      expect(
+        combined.scrub('(Authorization: Bearer eyJhbGc.eyJzdWI.c2lnbmF0dXJl)')
+          .data
+      ).to.equal('(Authorization: Bearer [SCRUBBED])');
+    });
   });
 
   describe('Bearer and Basic values', () => {
@@ -107,6 +187,18 @@ describe('CREDENTIAL_PATTERNS', () => {
       ).to.equal('from postgres://[SCRUBBED]@a/db to https://b.example.com');
     });
 
+    it('stays inside one JSON string or quoted value', () => {
+      expect(scrub('{"db":"postgres://u:p@h/db","email":"x@y.com"}')).to.equal(
+        '{"db":"postgres://[SCRUBBED]@h/db","email":"x@y.com"}'
+      );
+      expect(scrub("{ db: 'postgres://u:p@h/db', email: 'x@y.com' }")).to.equal(
+        "{ db: 'postgres://[SCRUBBED]@h/db', email: 'x@y.com' }"
+      );
+      expect(scrub('see <postgres://u:p@h/db> or x@y.com')).to.equal(
+        'see <postgres://[SCRUBBED]@h/db> or x@y.com'
+      );
+    });
+
     it('leaves a URL without a password alone', () => {
       for (const text of [
         'https://user@github.com/heroku/cli.git',
@@ -127,6 +219,10 @@ describe('CREDENTIAL_PATTERNS', () => {
       `x://${':'.repeat(200_000)}`,
       'Bearer '.repeat(30_000),
       'authorization: '.repeat(15_000),
+      `authorization: Digest ${'"a'.repeat(100_000)}`,
+      `authorization: "${'\\'.repeat(200_000)}`,
+      `authorization: '${"\\'".repeat(100_000)}`,
+      `x://u:${'"@'.repeat(100_000)}`,
       `HRKU-${'-'.repeat(200_000)}`,
     ];
     for (const input of inputs) {

@@ -20,7 +20,10 @@ export const PII_PATTERNS: readonly RegExp[] = Object.freeze([
  * lines: Heroku API tokens, Authorization header values, `Bearer`/`Basic`
  * credentials, and the password in a URL. Each pattern matches only the secret,
  * so `Bearer abc123…` becomes `Bearer [SCRUBBED]` and
- * `postgres://user:pass@host` becomes `postgres://[SCRUBBED]@host`.
+ * `postgres://user:pass@host` becomes `postgres://[SCRUBBED]@host`. An
+ * Authorization value with any scheme other than Bearer or Basic is replaced
+ * up to the end of the header value, since its credential can span several
+ * parameters (`Digest username="u", response="…"`).
  *
  * Every quantifier is bounded, so the cost stays linear on long input.
  *
@@ -40,13 +43,24 @@ export const PII_PATTERNS: readonly RegExp[] = Object.freeze([
  * ```
  */
 export const CREDENTIAL_PATTERNS: readonly RegExp[] = Object.freeze([
-  // Heroku API tokens. No leading \b: a token right after an ANSI color code
-  // (`\x1b[1mHRKU-…`) has no word boundary before it.
-  /HRKU-[\w-]{1,512}/g,
+  // Authorization header values, in header, JSON, or object-literal form:
+  // `Authorization: Bearer x`, `"authorization":"x"` or `authorization: 'x'`.
+  //
+  // A Bearer or Basic credential is a single token, so the scheme is kept and
+  // only the token is replaced. The token stops at whitespace, a quote, or the
+  // punctuation that can follow it in text, such as `)`, `]`, `>` or `&`.
+  /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}["']?(?:bearer|basic)\s{1,8})[^\s"'`,;()[\]<>{}&]{1,4096}/gi,
 
-  // Authorization header values, with or without a scheme, as in
-  // `Authorization: Bearer x`, `"authorization":"x"` or `authorization='x'`.
-  /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}["']?(?:(?:bearer|basic|token)\s{1,8})?)(?!(?:bearer|basic|token)\s)[^\s"',;}]{1,4096}/gi,
+  // Any other value is replaced up to the end of the header value: the closing
+  // quote of a quoted value, or for an unquoted value the end of the line or a
+  // closing `)`, `]`, `>`, `}` or `&`. That covers parameterized schemes such
+  // as `Digest username="u", response="…"`. The scheme word is kept for
+  // Digest, Negotiate, NTLM, OAuth and Token, and replaced along with the
+  // value for any other scheme. One pattern per quoting style: double-quoted,
+  // single-quoted, unquoted.
+  /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}"(?:(?:digest|negotiate|ntlm|oauth|token)\s{1,8})?)(?!(?:bearer|basic|digest|negotiate|ntlm|oauth|token)\s)(?:\\.|[^"\\\r\n]){1,4096}/gi,
+  /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}'(?:(?:digest|negotiate|ntlm|oauth|token)\s{1,8})?)(?!(?:bearer|basic|digest|negotiate|ntlm|oauth|token)\s)(?:\\.|[^'\\\r\n]){1,4096}/gi,
+  /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}(?:(?:digest|negotiate|ntlm|oauth|token)\s{1,8})?)(?![\s"'])(?!(?:bearer|basic|digest|negotiate|ntlm|oauth|token)\s)(?:"[^"\r\n]{0,512}"|[^\r\n"'()[\]<>{}&]){1,4096}/gi,
 
   // Standalone Bearer values.
   /(?<=\b[Bb]earer\s{1,8})(?=[\w.~+/=-][a-z]{0,4096}[A-Z\d_.~+/=-])[\w.~+/=-]{8,4096}/g,
@@ -56,8 +70,14 @@ export const CREDENTIAL_PATTERNS: readonly RegExp[] = Object.freeze([
 
   // The userinfo of a URL with a password, including an empty username
   // (`rediss://:password@host`) and a password with an unencoded `/` or `@`:
-  // everything up to the last `@` in the URL is redacted. That over-redacts a
-  // URL with a port and an `@` in its path (`https://host:443/u/a@b.com`),
-  // which is rare in error text.
-  /(?<=\b[a-z][\d+.a-z-]{0,31}:\/\/)[^\s/?#@:]{0,256}:\S{0,4096}(?=@)/gi,
+  // everything up to the last `@` before whitespace, a quote, or `<`/`>` is
+  // redacted, so the match stays inside one JSON string or quoted value. That
+  // over-redacts a URL with a port and an `@` in its path
+  // (`https://host:443/u/a@b.com`), which is rare in error text.
+  /(?<=\b[a-z][\d+.a-z-]{0,31}:\/\/)[^\s/?#@:]{0,256}:[^\s"'<>]{0,4096}(?=@)/gi,
+
+  // Heroku API tokens. No leading \b: a token right after an ANSI color code
+  // (`\x1b[1mHRKU-…`) has no word boundary before it. Listed last so the
+  // Authorization patterns above see the token itself, not a replacement.
+  /HRKU-[\w-]{1,512}/g,
 ]);
