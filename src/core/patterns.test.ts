@@ -1,6 +1,5 @@
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
-import { inspect } from 'node:util';
 import { CREDENTIAL_PATTERNS, PII_PATTERNS } from './patterns.js';
 import { Scrubber } from './scrubber.js';
 
@@ -76,11 +75,24 @@ describe('CREDENTIAL_PATTERNS', () => {
     });
 
     it('scrubs a key split across lines by util.inspect', () => {
-      const pem = `-----BEGIN PRIVATE KEY-----\n${'MIIEpAIBAAKCAQEA1x+/9z\n'.repeat(8)}-----END PRIVATE KEY-----\n`;
-      const scrubbed = scrub(inspect({ key: pem, name: 'x' }));
-      expect(scrubbed).to.include('-----BEGIN PRIVATE KEY-----[SCRUBBED]');
-      expect(scrubbed).to.include("name: 'x'");
-      expect(scrubbed).not.to.include('MIIE');
+      // What Node's util.inspect prints for an object holding a PEM key.
+      const inspected = [
+        '{',
+        "  key: '-----BEGIN PRIVATE KEY-----\\n' +",
+        "    'MIIEpAIBAAKCAQEA1x+/9z\\n' +",
+        "    'MIIEpAIBAAKCAQEA1x+/9z\\n' +",
+        "    '-----END PRIVATE KEY-----\\n',",
+        "  name: 'x'",
+        '}',
+      ].join('\n');
+      expect(scrub(inspected)).to.equal(
+        [
+          '{',
+          "  key: '-----BEGIN PRIVATE KEY-----[SCRUBBED]\\n',",
+          "  name: 'x'",
+          '}',
+        ].join('\n')
+      );
     });
 
     it('leaves certificates and public keys alone', () => {
