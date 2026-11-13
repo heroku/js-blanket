@@ -25,7 +25,9 @@ export const PII_PATTERNS: readonly RegExp[] = Object.freeze([
  * up to the end of the header value, since its credential can span several
  * parameters (`Digest username="u", response="…"`).
  *
- * Every quantifier is bounded, so the cost stays linear on long input.
+ * Every quantifier is bounded, so the cost stays linear on long input. A
+ * credential is matched up to 16,384 characters, Node's default maximum HTTP
+ * header size, so any credential that fits in a header is replaced in full.
  *
  * Standalone `Bearer`/`Basic` values are matched only when they look like a
  * credential (8 or more characters, with a digit, symbol, or uppercase letter
@@ -43,13 +45,20 @@ export const PII_PATTERNS: readonly RegExp[] = Object.freeze([
  * ```
  */
 export const CREDENTIAL_PATTERNS: readonly RegExp[] = Object.freeze([
+  // The body of a PEM private key: PKCS#1, PKCS#8, encrypted, EC, OpenSSH or
+  // PGP. The BEGIN line is kept so the text still says what was there; the
+  // body and the END line are replaced. A key cut off before its END line is
+  // replaced to the end of its base64. The body may be JSON-escaped (`\\n`)
+  // or split across lines by util.inspect (`'…\\n' +`).
+  /(?<=-----BEGIN (?:[A-Z\d]+ ){0,4}PRIVATE KEY(?: BLOCK)?-----)(?:[\w\s+/=:,\\']|-(?!----)){1,16384}(?:-----END (?:[A-Z\d]+ ){0,4}PRIVATE KEY(?: BLOCK)?-----)?/g,
+
   // Authorization header values, in header, JSON, or object-literal form:
   // `Authorization: Bearer x`, `"authorization":"x"` or `authorization: 'x'`.
   //
   // A Bearer or Basic credential is a single token, so the scheme is kept and
   // only the token is replaced. The token stops at whitespace, a quote, or the
   // punctuation that can follow it in text, such as `)`, `]`, `>` or `&`.
-  /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}["']?(?:bearer|basic)\s{1,8})[^\s"'`,;()[\]<>{}&]{1,4096}/gi,
+  /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}["']?(?:bearer|basic)\s{1,8})[^\s"'`,;()[\]<>{}&]{1,16384}/gi,
 
   // Any other value is replaced up to the end of the header value: the closing
   // quote of a quoted value, or for an unquoted value the end of the line or a
@@ -58,26 +67,28 @@ export const CREDENTIAL_PATTERNS: readonly RegExp[] = Object.freeze([
   // Digest, Negotiate, NTLM, OAuth and Token, and replaced along with the
   // value for any other scheme. One pattern per quoting style: double-quoted,
   // single-quoted, unquoted.
-  /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}"(?:(?:digest|negotiate|ntlm|oauth|token)\s{1,8})?)(?!(?:bearer|basic|digest|negotiate|ntlm|oauth|token)\s)(?:\\.|[^"\\\r\n]){1,4096}/gi,
-  /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}'(?:(?:digest|negotiate|ntlm|oauth|token)\s{1,8})?)(?!(?:bearer|basic|digest|negotiate|ntlm|oauth|token)\s)(?:\\.|[^'\\\r\n]){1,4096}/gi,
-  /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}(?:(?:digest|negotiate|ntlm|oauth|token)\s{1,8})?)(?![\s"'])(?!(?:bearer|basic|digest|negotiate|ntlm|oauth|token)\s)(?:"[^"\r\n]{0,512}"|[^\r\n"'()[\]<>{}&]){1,4096}/gi,
+  /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}"(?:(?:digest|negotiate|ntlm|oauth|token)\s{1,8})?)(?!(?:bearer|basic|digest|negotiate|ntlm|oauth|token)\s)(?:\\.|[^"\\\r\n]){1,16384}/gi,
+  /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}'(?:(?:digest|negotiate|ntlm|oauth|token)\s{1,8})?)(?!(?:bearer|basic|digest|negotiate|ntlm|oauth|token)\s)(?:\\.|[^'\\\r\n]){1,16384}/gi,
+  /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}(?:(?:digest|negotiate|ntlm|oauth|token)\s{1,8})?)(?![\s"'])(?!(?:bearer|basic|digest|negotiate|ntlm|oauth|token)\s)(?:"[^"\r\n]{0,16384}"|[^\r\n"'()[\]<>{}&]){1,16384}/gi,
 
   // Standalone Bearer values.
-  /(?<=\b[Bb]earer\s{1,8})(?=[\w.~+/=-][a-z]{0,4096}[A-Z\d_.~+/=-])[\w.~+/=-]{8,4096}/g,
+  /(?<=\b[Bb]earer\s{1,8})(?=[\w.~+/=-][a-z]{0,16384}[A-Z\d_.~+/=-])[\w.~+/=-]{8,16384}/g,
 
   // Standalone Basic values (base64 of user:password).
-  /(?<=\b[Bb]asic\s{1,8})(?=[A-Za-z\d+/][a-z]{0,4096}[A-Z\d+/=])[A-Za-z\d+/]{8,4096}={0,2}/g,
+  /(?<=\b[Bb]asic\s{1,8})(?=[A-Za-z\d+/][a-z]{0,16384}[A-Z\d+/=])[A-Za-z\d+/]{8,16384}={0,2}/g,
 
   // The userinfo of a URL with a password, including an empty username
   // (`rediss://:password@host`) and a password with an unencoded `/` or `@`:
   // everything up to the last `@` before whitespace, a quote, or `<`/`>` is
   // redacted, so the match stays inside one JSON string or quoted value. That
   // over-redacts a URL with a port and an `@` in its path
-  // (`https://host:443/u/a@b.com`), which is rare in error text.
-  /(?<=\b[a-z][\d+.a-z-]{0,31}:\/\/)[^\s/?#@:]{0,256}:[^\s"'<>]{0,4096}(?=@)/gi,
+  // (`https://host:443/u/a@b.com`), which is rare in error text. The search
+  // for the `@` also stops at the next `://`, so text with many URLs and no
+  // `@` costs one pass rather than 4,096 characters per URL.
+  /(?<=\b[a-z][\d+.a-z-]{0,31}:\/\/)[^\s/?#@:]{0,256}:(?:(?!:\/\/)[^\s"'<>]){0,4096}(?=@)/gi,
 
   // Heroku API tokens. No leading \b: a token right after an ANSI color code
   // (`\x1b[1mHRKU-…`) has no word boundary before it. Listed last so the
   // Authorization patterns above see the token itself, not a replacement.
-  /HRKU-[\w-]{1,512}/g,
+  /HRKU-[\w-]{1,16384}/g,
 ]);

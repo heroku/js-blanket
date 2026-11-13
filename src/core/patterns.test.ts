@@ -1,5 +1,6 @@
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
+import { inspect } from 'node:util';
 import { CREDENTIAL_PATTERNS, PII_PATTERNS } from './patterns.js';
 import { Scrubber } from './scrubber.js';
 
@@ -25,6 +26,91 @@ describe('CREDENTIAL_PATTERNS', () => {
       expect(scrub('\x1b[1mHRKU-AAbc123\x1b[22m')).to.equal(
         '\x1b[1m[SCRUBBED]\x1b[22m'
       );
+    });
+  });
+
+  describe('PEM private keys', () => {
+    const body = 'MIIEpAIBAAKCAQEA1x+/9z\nQk7wR2s0pX=\n';
+
+    it('keeps the BEGIN line and scrubs the body and END line', () => {
+      for (const label of [
+        'RSA PRIVATE KEY',
+        'PRIVATE KEY',
+        'ENCRYPTED PRIVATE KEY',
+        'EC PRIVATE KEY',
+        'OPENSSH PRIVATE KEY',
+        'PGP PRIVATE KEY BLOCK',
+      ]) {
+        expect(
+          scrub(
+            `invalid key: -----BEGIN ${label}-----\n${body}-----END ${label}-----\nretry`
+          )
+        ).to.equal(`invalid key: -----BEGIN ${label}-----[SCRUBBED]\nretry`);
+      }
+    });
+
+    it('scrubs an encrypted key with Proc-Type and DEK-Info headers', () => {
+      expect(
+        scrub(
+          '-----BEGIN RSA PRIVATE KEY-----\nProc-Type: 4,ENCRYPTED\nDEK-Info: AES-128-CBC,0A1B2C3D\n\n' +
+            body +
+            '-----END RSA PRIVATE KEY-----'
+        )
+      ).to.equal('-----BEGIN RSA PRIVATE KEY-----[SCRUBBED]');
+    });
+
+    it('scrubs a key cut off before its END line', () => {
+      expect(scrub(`-----BEGIN PRIVATE KEY-----\n${body}`)).to.equal(
+        '-----BEGIN PRIVATE KEY-----[SCRUBBED]'
+      );
+    });
+
+    it('scrubs a JSON-escaped key and keeps the next field', () => {
+      const json = JSON.stringify({
+        key: `-----BEGIN PRIVATE KEY-----\n${body}-----END PRIVATE KEY-----\n`,
+        name: 'x',
+      });
+      expect(scrub(json)).to.equal(
+        '{"key":"-----BEGIN PRIVATE KEY-----[SCRUBBED]\\n","name":"x"}'
+      );
+    });
+
+    it('scrubs a key split across lines by util.inspect', () => {
+      const pem = `-----BEGIN PRIVATE KEY-----\n${'MIIEpAIBAAKCAQEA1x+/9z\n'.repeat(8)}-----END PRIVATE KEY-----\n`;
+      const scrubbed = scrub(inspect({ key: pem, name: 'x' }));
+      expect(scrubbed).to.include('-----BEGIN PRIVATE KEY-----[SCRUBBED]');
+      expect(scrubbed).to.include("name: 'x'");
+      expect(scrubbed).not.to.include('MIIE');
+    });
+
+    it('leaves certificates and public keys alone', () => {
+      for (const text of [
+        `-----BEGIN CERTIFICATE-----\n${body}-----END CERTIFICATE-----`,
+        `-----BEGIN PUBLIC KEY-----\n${body}-----END PUBLIC KEY-----`,
+      ]) {
+        expect(scrub(text)).to.equal(text);
+      }
+    });
+  });
+
+  describe('long credentials', () => {
+    const long = 'A1'.repeat(8000);
+
+    it('scrubs a credential up to 16,384 characters in full', () => {
+      expect(scrub(`Authorization: Bearer ${long}`)).to.equal(
+        'Authorization: Bearer [SCRUBBED]'
+      );
+      expect(
+        scrub(`{"authorization":"Digest response=\\"${long}\\""}`)
+      ).to.equal('{"authorization":"Digest [SCRUBBED]"}');
+      expect(scrub(`Authorization: Foo sig="${long}"`)).to.equal(
+        'Authorization: [SCRUBBED]'
+      );
+      expect(scrub(`sent Bearer ${long} to the API`)).to.equal(
+        'sent Bearer [SCRUBBED] to the API'
+      );
+      expect(scrub(`Basic ${long}==`)).to.equal('Basic [SCRUBBED]');
+      expect(scrub(`HRKU-${long}`)).to.equal('[SCRUBBED]');
     });
   });
 
@@ -223,7 +309,11 @@ describe('CREDENTIAL_PATTERNS', () => {
       `authorization: "${'\\'.repeat(200_000)}`,
       `authorization: '${"\\'".repeat(100_000)}`,
       `x://u:${'"@'.repeat(100_000)}`,
+      'x://a:'.repeat(170_000),
       `HRKU-${'-'.repeat(200_000)}`,
+      `-----BEGIN PRIVATE KEY-----${'-'.repeat(200_000)}`,
+      ('-----BEGIN PRIVATE KEY-----' + 'a '.repeat(10_000)).repeat(50),
+      '-----BEGIN PRIVATE KEY-----'.repeat(40_000),
     ];
     for (const input of inputs) {
       const start = performance.now();

@@ -112,8 +112,10 @@ Two pattern presets are exported:
 - `PII_PATTERNS`: SSNs, email addresses, US phone numbers and JWTs.
 - `CREDENTIAL_PATTERNS`: credentials in free text, such as error messages and
   log lines. Heroku API tokens (`HRKU-…`), `Authorization` header values,
-  `Bearer`/`Basic` credentials and the password in a URL. Only the secret is
-  replaced, so the surrounding text still reads.
+  `Bearer`/`Basic` credentials, the password in a URL, and PEM private keys.
+  Only the secret is replaced, so the surrounding text still reads. A credential
+  is replaced in full up to 16,384 characters, Node's default maximum HTTP
+  header size.
 
 ```typescript
 import { CREDENTIAL_PATTERNS, Scrubber } from '@heroku/js-blanket';
@@ -131,6 +133,9 @@ An `Authorization` value with any other scheme, such as
 `Digest username="u", response="…"`, is replaced up to the end of the header
 value, because its credential can span several parameters. The scheme word is
 kept for Digest, Negotiate, NTLM, OAuth and Token.
+
+A PEM private key keeps its `-----BEGIN … PRIVATE KEY-----` line, and its body
+and END line are replaced. Certificates and public keys are left alone.
 
 `CREDENTIAL_PATTERNS` matches a standalone `Bearer`/`Basic` value only when it
 looks like a credential, so prose like "Basic size dynos" is left alone. Legacy
