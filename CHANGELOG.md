@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/heroku/js-blanket/compare/js-blanket-v1.3.0...js-blanket-v1.4.0) (2026-11-13)
+
+
+### Features
+
+* **patterns:** add CREDENTIAL_PATTERNS for credentials in free text ([#77](https://github.com/heroku/js-blanket/issues/77)) ([b2b560e](https://github.com/heroku/js-blanket/commit/b2b560e8b3dd12538882d53e9d6cf60b1e228362))
+
 ## [1.3.0](https://github.com/heroku/js-blanket/compare/js-blanket-v1.2.0...js-blanket-v1.3.0) (2026-10-30)
 
 
