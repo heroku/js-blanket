@@ -246,12 +246,37 @@ describe('CREDENTIAL_PATTERNS', () => {
       expect(scrub('Basic dXNlcjpwYXNzd29yZA==')).to.equal('Basic [SCRUBBED]');
     });
 
+    it('scrubs a UUID-format token', () => {
+      expect(
+        scrub('sent Bearer 01234567-89ab-cdef-0123-456789abcdef')
+      ).to.equal('sent Bearer [SCRUBBED]');
+    });
+
+    it('scrubs a credential after an uppercase scheme', () => {
+      expect(scrub('sent BEARER abc123def456 to the API')).to.equal(
+        'sent BEARER [SCRUBBED] to the API'
+      );
+      expect(scrub('BASIC dXNlcjpwYXNzd29yZA==')).to.equal('BASIC [SCRUBBED]');
+    });
+
+    it('leaves short and all-lowercase values alone', () => {
+      for (const text of [
+        'sent Bearer abc123',
+        'sent Bearer abcdefghijkl',
+        'sent Basic dTpw',
+      ]) {
+        expect(scrub(text)).to.equal(text);
+      }
+    });
+
     it('leaves prose alone', () => {
       for (const text of [
         'Basic size dynos are not available in this region',
         'Upgrade from the Basic Professional plan',
         'the bearer instrument',
         'Bearer tokens expire after eight hours',
+        'BASIC PLAN',
+        'BEARER TOKEN REQUIRED',
       ]) {
         expect(scrub(text)).to.equal(text);
       }

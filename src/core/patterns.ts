@@ -29,9 +29,12 @@ export const PII_PATTERNS: readonly RegExp[] = Object.freeze([
  * credential is matched up to 16,384 characters, Node's default maximum HTTP
  * header size, so any credential that fits in a header is replaced in full.
  *
- * Standalone `Bearer`/`Basic` values are matched only when they look like a
- * credential (8 or more characters, with a digit, symbol, or uppercase letter
- * after the first character), so prose like "Basic size dynos" is left alone.
+ * Standalone `Bearer`/`Basic` values, with the scheme written `Bearer`,
+ * `bearer` or `BEARER` (likewise for Basic), are matched only when they look
+ * like a credential: 8 or more characters, with a digit, symbol, or uppercase
+ * letter after the first character. Prose like "Basic size dynos" is left
+ * alone, and so are short or all-lowercase values such as `Bearer abc123`;
+ * after `Authorization:` any value is replaced.
  * Legacy UUID-format Heroku tokens look like any other ID; redact those by
  * exact value.
  *
@@ -72,10 +75,10 @@ export const CREDENTIAL_PATTERNS: readonly RegExp[] = Object.freeze([
   /(?<=\bauthorization["']?\s{0,8}[:=]\s{0,8}(?:(?:digest|negotiate|ntlm|oauth|token)\s{1,8})?)(?![\s"'])(?!(?:bearer|basic|digest|negotiate|ntlm|oauth|token)\s)(?:"[^"\r\n]{0,16384}"|[^\r\n"'()[\]<>{}&]){1,16384}/gi,
 
   // Standalone Bearer values.
-  /(?<=\b[Bb]earer\s{1,8})(?=[\w.~+/=-][a-z]{0,16384}[A-Z\d_.~+/=-])[\w.~+/=-]{8,16384}/g,
+  /(?<=\b(?:[Bb]earer|BEARER)\s{1,8})(?=[\w.~+/=-][a-z]{0,16384}[A-Z\d_.~+/=-])[\w.~+/=-]{8,16384}/g,
 
   // Standalone Basic values (base64 of user:password).
-  /(?<=\b[Bb]asic\s{1,8})(?=[A-Za-z\d+/][a-z]{0,16384}[A-Z\d+/=])[A-Za-z\d+/]{8,16384}={0,2}/g,
+  /(?<=\b(?:[Bb]asic|BASIC)\s{1,8})(?=[A-Za-z\d+/][a-z]{0,16384}[A-Z\d+/=])[A-Za-z\d+/]{8,16384}={0,2}/g,
 
   // The userinfo of a URL with a password, including an empty username
   // (`rediss://:password@host`) and a password with an unencoded `/` or `@`:
